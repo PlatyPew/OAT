@@ -35,7 +35,7 @@ def verify(key_id: str, data: bytes) -> bool:
                                stderr=subprocess.PIPE)
     _, output = process.communicate(input=data)
 
-    return key_id.encode() in output and process.wait() == 0
+    return f"<{key_id}>".encode() in output and process.wait() == 0
 
 
 def encrypt(key_id: str, data: bytes) -> bytes:
@@ -71,13 +71,29 @@ def decrypt(key_id: str, data: bytes) -> bytes:
                                stderr=subprocess.PIPE)
     output, meta = process.communicate(input=data)
 
-    if key_id.encode() not in meta:
+    if f"<{key_id}>".encode() not in meta:
         raise Exception(meta)
 
     return output
 
 
-def export(key_id: str) -> bytes:
+def import_key(data: bytes) -> bool:
+    """
+    Imports key and returns output as boolean
+
+    :param data: Public Key In Bytes
+    :return: Boolean of successful import
+    """
+    process = subprocess.Popen(["gpg", "--import"],
+                               stdin=subprocess.PIPE,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    process.communicate(input=data)
+
+    return process.wait() == 0
+
+
+def export_key(key_id: str) -> bytes:
     """
     Returns public key as bytes
 
@@ -86,7 +102,8 @@ def export(key_id: str) -> bytes:
     """
     process = subprocess.Popen(["gpg", "--export", key_id],
                                stdin=subprocess.PIPE,
-                               stdout=subprocess.PIPE)
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
     output, error = process.communicate()
 
     if error:

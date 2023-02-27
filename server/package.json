@@ -15,5 +15,6 @@
   "bugs": {
     "url": "https://github.com/PlatyPew/OAK/issues"
   },
-  "homepage": "https://github.com/PlatyPew/OAK#readme"
+  "homepage": "https://github.com/PlatyPew/OAK#readme",
+  "devDependencies": {}
 }

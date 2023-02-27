@@ -1,39 +1,26 @@
 // const gpg = require('gpg-with-err-handling');
-// const bcrypt = require("bcrypt");
 
-const generateRandom256Bytes = async function () {
+const crypto = require("crypto");
 
-    const { randomBytes } = await import('node:crypto');
-    const buf = randomBytes(64);
-
-    return buf;
-};
-
-const generateIV = function () {
-    return generateRandom256Bytes();
+const generateIV = () => {
+    return crypto.randomBytes(64);
 }
 
-const generateNewToken = async function (oldToken) {
-    const { createHash } = await import('node:crypto');
-    return new Promise((resolve, reject) => {
-        let rng = generateRandom256Bytes();
+const generateNewToken = (previousToken) => {
+    // Convert previous token SHA 512 hex string to byte array
+    const previousTokenByte = Buffer.from(previousToken, "hex");
 
-    });
+    // Generate new IV byte array for next rolling token
+    const rng = generateIV();
 
-    let rng = generateRandom256Bytes();
+    // Concatenate old token byte array and new IV byte array
+    const arr = [previousTokenByte, rng];
+    const buf = Buffer.concat(arr);
 
-    return new Promise((resolve, reject) => {
-        rng.then((value) => {
-            const hash = createHash('sha512').update(value).digest("hex");
-            console.log(hash);
-            resolve(hash);
-        }).catch(reject);
-    });
+    // Generate SHA512 hash from concatenated byte array
+    const hash = crypto.createHash('sha512').update(buf).digest("hex");
     
-    // rng.then((value) => {
-    //     hash1 = createHash('sha512').update(value).digest("hex");
-    //     return hash1;
-    // });
+    return hash;
  };
 
 module.exports = { generateIV, generateNewToken }

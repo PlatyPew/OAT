@@ -1,5 +1,3 @@
-// const gpg = require('gpg-with-err-handling');
-
 const crypto = require("crypto");
 
 const generateIV = () => {

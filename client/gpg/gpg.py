@@ -3,6 +3,11 @@ import subprocess
 
 
 def _gpg_exists() -> bool:
+    """
+    Checks if gpg is installed in path
+
+    :return: Boolean result if gpg is installed
+    """
     from shutil import which
     return which("gpg") is not None
 

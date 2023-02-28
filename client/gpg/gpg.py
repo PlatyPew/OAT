@@ -2,6 +2,11 @@
 import subprocess
 
 
+def _gpg_exists() -> bool:
+    from shutil import which
+    return which("gpg") is not None
+
+
 def sign(key_id: str, data: bytes, options: list = []) -> bytes:
     """
     Signs data and returns output as bytes
@@ -11,6 +16,9 @@ def sign(key_id: str, data: bytes, options: list = []) -> bytes:
     :param options: Additional Options
     :return: Signed Data
     """
+    if not _gpg_exists():
+        raise Exception("GPG command does not exist")
+
     process = subprocess.Popen(["gpg", "--local-user", key_id, "--output", "-"] + options +
                                ["--sign"],
                                stdin=subprocess.PIPE,
@@ -33,6 +41,9 @@ def verify(key_id: str, data: bytes, options: list = []) -> bool:
     :param options: Additional Options
     :return: Boolean Of Successful Verification
     """
+    if not _gpg_exists():
+        raise Exception("GPG command does not exist")
+
     process = subprocess.Popen(["gpg"] + options + ["--verify"],
                                stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
@@ -51,6 +62,9 @@ def encrypt(key_id: str, data: bytes, options: list = []) -> bytes:
     :param options: Additional Options
     :return: Encrypted Data
     """
+    if not _gpg_exists():
+        raise Exception("GPG command does not exist")
+
     process = subprocess.Popen(["gpg", "--recipient", key_id, "--output", "-"] + options +
                                ["--encrypt"],
                                stdin=subprocess.PIPE,
@@ -73,6 +87,9 @@ def decrypt(key_id: str, data: bytes, options: list = []) -> bytes:
     :param options: Additional Options
     :return: Decrypted Data
     """
+    if not _gpg_exists():
+        raise Exception("GPG does not exist")
+
     process = subprocess.Popen(["gpg"] + options + ["--decrypt"],
                                stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
@@ -93,6 +110,9 @@ def import_key(data: bytes, options: list = []) -> bool:
     :param options: Additional Options
     :return: Boolean of successful import
     """
+    if not _gpg_exists():
+        raise Exception("GPG command does not exist")
+
     process = subprocess.Popen(["gpg"] + options + ["--import"],
                                stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
@@ -110,6 +130,9 @@ def export_key(key_id: str, options: list = []) -> bytes:
     :param options: Additional Options
     :return: Exported Key
     """
+    if not _gpg_exists():
+        raise Exception("GPG command does not exist")
+
     process = subprocess.Popen(["gpg"] + options + ["--export", key_id],
                                stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,

@@ -7,7 +7,7 @@ const oak = require('./index');
 
 // Setup the express server
 const app = express();
-const PORT = 3000;
+const PORT = 8080;
 
 // Import middle ware into epress
 app.use(express.json({limit:"8mb"}));
@@ -22,7 +22,7 @@ token = oak.generateNewToken("3615f80c9d293ed7402687f94b22d58e529b8cc7916f8fac7f
 
 console.log(token) // "Some User token"
 
-const MONGO = "mongodb://192.168.1.170:8000/oak"
+const MONGO = "mongodb://localhost:8000/oak"
 
 // Start Server
 console.log(`Waiting to connect to ${MONGO}`);

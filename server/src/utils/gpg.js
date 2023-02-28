@@ -84,9 +84,43 @@ const decrypt = (keyId, data) => {
     return gpg.stdout;
 };
 
+/**
+ * Imports key and returns output as boolean
+ *
+ * @param {bytes} data - Public Key In Bytes
+ * @returns {boolean} Boolean of successful import
+ */
+const import_key = (data) => {
+    if (!_gpg_exists()) throw new Error("GPG command does not exist");
+
+    const gpg = spawnSync("gpg", ["--import"], {
+        input: data,
+    });
+
+    return gpg.status === 0;
+};
+
+/**
+ * Returns public key as bytes
+ *
+ * @param {string} keyId - Key To Export
+ * @returns {bytes} Exported Key
+ */
+const export_key = (keyId) => {
+    if (!_gpg_exists()) throw new Error("GPG command does not exist");
+
+    const gpg = spawnSync("gpg", ["--export", keyId]);
+
+    if (gpg.stderr.length !== 0) throw new Erorr(gpg.stderr.toString());
+
+    return gpg.stdout;
+};
+
 module.exports = {
     sign: sign,
     verify: verify,
     encrypt: encrypt,
     decrypt: decrypt,
+    import_key: import_key,
+    export_key: export_key,
 };

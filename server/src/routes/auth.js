@@ -35,10 +35,10 @@ router.post("/", async(req, res) => {
             console.log(gpgUid);
             const encryptedIV = await gpg.encrypt(gpgUid, iv); // There is no assurance this key belongs to the named user
             console.log(encryptedIV);
-            // res.status(200).send({
-            //     ok: true,
-            //     token: encryptedIV
-            // });
+            res.status(200).send({
+                ok: true,
+                token: encryptedIV
+            });
         }
         else {
             throw new Error("Authentication failed.");

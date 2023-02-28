@@ -166,12 +166,13 @@ def gen_key(key_id: str, password: str, options: list = []) -> bool:
     if not _gpg_exists():
         raise Exception("GPG command does not exist")
 
-    process = subprocess.Popen(
-        ["gpg"] + options +
-        ["--batch", "--passphrase", password, "--quick-gen-key", key_id, "default", "default"],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE)
+    process = subprocess.Popen(["gpg"] + options + [
+        "--batch", "--passphrase", password, "--quick-gen-key", f"OAK <{key_id}>", "default",
+        "default"
+    ],
+                               stdin=subprocess.PIPE,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
 
     process.communicate()
 

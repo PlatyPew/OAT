@@ -148,3 +148,27 @@ def export_key(key_id: str, options: list = []) -> bytes:
         raise Exception(error)
 
     return output
+
+
+def gen_key(key_id: str, password: str, options: list = []) -> bool:
+    """
+    Generates key pair
+
+    :param key_id: Key ID
+    :param password: Password To Encrypt Key
+    :param options: Additional Options
+    :return: Boolean of successful generation
+    """
+    if not _gpg_exists():
+        raise Exception("GPG command does not exist")
+
+    process = subprocess.Popen(
+        ["gpg"] + options +
+        ["--batch", "--passphrase", password, "--quick-gen-key", key_id, "default", "default"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE)
+
+    process.communicate()
+
+    return process.wait() == 0

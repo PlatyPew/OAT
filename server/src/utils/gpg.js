@@ -29,6 +29,13 @@ const sign = (keyId, data) => {
     return gpg.stdout;
 };
 
+/**
+ * Verify data and returns output boolean
+ *
+ * @param {string} keyId - Key To Use
+ * @param {bytes} data - Data To Verify
+ * @returns {bytes} Boolean Of Successful Verification
+ */
 const verify = (keyId, data) => {
     if (!_gpg_exists()) throw new Error("GPG command does not exist");
 
@@ -39,7 +46,47 @@ const verify = (keyId, data) => {
     return gpg.stderr.includes(`<${keyId}>`) && gpg.status === 0;
 };
 
+/**
+ * Encrypt data and returns output as bytes
+ *
+ * @param {string} keyId - Key To Use
+ * @param {bytes} data - Data To Encrypt
+ * @returns {bytes} Encrypted Data
+ */
+const encrypt = (keyId, data) => {
+    if (!_gpg_exists()) throw new Error("GPG command does not exist");
+
+    const gpg = spawnSync("gpg", ["--recipient", keyId, "--output", "-", "--encrypt"], {
+        input: data,
+    });
+
+    if (gpg.stderr.length !== 0) throw new Erorr(gpg.stderr.toString());
+
+    return gpg.stdout;
+};
+
+/**
+ * Decrypt data and returns output as bytes
+ *
+ * @param {string} keyId - Key To Use
+ * @param {bytes} data - Data To Decrypt
+ * @returns {bytes} Decrypted Data
+ */
+const decrypt = (keyId, data) => {
+    if (!_gpg_exists()) throw new Error("GPG command does not exist");
+
+    const gpg = spawnSync("gpg", ["--decrypt"], {
+        input: data,
+    });
+
+    if (!gpg.stderr.includes(`<${keyId}>`)) throw new Error(gpg.stderr.toString());
+
+    return gpg.stdout;
+};
+
 module.exports = {
     sign: sign,
     verify: verify,
+    encrypt: encrypt,
+    decrypt: decrypt,
 };

@@ -60,7 +60,7 @@ const encrypt = (keyId, data) => {
         input: data,
     });
 
-    if (gpg.stderr.length !== 0) throw new Erorr(gpg.stderr.toString());
+    if (gpg.stderr.length !== 0) throw new Error(gpg.stderr.toString());
 
     return gpg.stdout;
 };
@@ -113,7 +113,7 @@ const export_key = (keyId) => {
 
     const gpg = spawnSync("gpg", ["--export", keyId]);
 
-    if (gpg.stderr.length !== 0) throw new Erorr(gpg.stderr.toString());
+    if (gpg.stderr.length !== 0) throw new Error(gpg.stderr.toString());
 
     return gpg.stdout;
 };

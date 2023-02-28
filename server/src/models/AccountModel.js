@@ -4,6 +4,7 @@ const AccountInfoSchema = new mongoose.Schema(
     {
         email: { type: "String" },
         password: { type: "String" },
+        gpgUid: { type: "String" },
         prevToken: { type: "String" },
         newToken: { type: "String" }
     },

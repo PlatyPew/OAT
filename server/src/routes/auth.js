@@ -1,54 +1,54 @@
 // Import dependencies
 const express = require("express");
-const gpg = require('gpg');
+const mongoose = require("mongoose");
 
-// Signin Route
-const auth = require("../utils/auth");
+// GPG + MongoDB Update Module
+const gpg = require('../utils/gpg');
+const update = require("../utils/update");
 
 // OAK Module
-const oak = require('../.././index');
+const oak = require('../../index');
+
+const fs = require('fs'); // To be removed and uninstalled
 
 // Setup the express server router
 const router = express.Router();
 
 // On post
 router.post("/", async(req, res) => {
-    
+    res.setHeader("Content-Type", "application/json");
+
     // Get user from the database
     const email = req.body.email;
     const password = req.body.password;
     //const publickey = req.body.publickey;
-
-    // **Need to store public key in server's keystore**
-
-    //res.setHeader("Content-Type", "application/json");
+    
+    const publickey = fs.readFileSync('./src/routes/key.asc'); // Temp solution
 
     try {
-        const out = await auth.signin(email, password);
+        const iv = await update.updateByAccount(email, password, publickey);
 
-        if (out) {
-            let iv = oak.generateIV();
+        if (iv) {
             console.log("success");
-            console.log(iv);
-            
-            // Store token in both prevtoken and newtoken in mongodb
-            
-
             // Encrypt IV with public key and send to client
-
-            //let encryptedIV = gpg.encrypt(iv, "--recipient") // **Need to encrypt iv with public key**
+            const gpgUid = await update.getGpgUid(email);
+            console.log(gpgUid);
+            const encryptedIV = await gpg.encrypt(gpgUid, iv); // There is no assurance this key belongs to the named user
+            console.log(encryptedIV);
+            // res.status(200).send({
+            //     ok: true,
+            //     token: encryptedIV
+            // });
         }
-        console.log(out);
-
-        //res.json({ response: out });
+        else {
+            throw new Error("Authentication failed.");
+        }
     } catch (err) {
-        res.status(500).json({ response: err.toString() });
+        res.status(503).json({
+            ok: false,
+            response: err.toString()
+        });
     }
-
-    res.send({
-        ok: true,
-        //token: token
-    });
 });
 
 // Export the router

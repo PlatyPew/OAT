@@ -85,7 +85,7 @@ const decrypt = (keyId, data) => {
 };
 
 /**
- * Imports key and returns output as boolean
+ * Imports key and returns key ID
  *
  * @param {bytes} data - Public Key In Bytes
  * @returns {string} Key ID

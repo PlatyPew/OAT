@@ -70,11 +70,12 @@ def encrypt(key_id: str, data: bytes, options: list = []) -> bytes:
     if not _gpg_exists():
         raise Exception("GPG command does not exist")
 
-    process = subprocess.Popen(["gpg", "--recipient", key_id, "--output", "-"] + options +
-                               ["--encrypt"],
-                               stdin=subprocess.PIPE,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
+    process = subprocess.Popen(
+        ["gpg", "--recipient", key_id, "--trust-model", "always", "--output", "-"] + options +
+        ["--encrypt"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE)
     output, error = process.communicate(input=data)
 
     if error:

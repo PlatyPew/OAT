@@ -88,7 +88,7 @@ const decrypt = (keyId, data) => {
  * Imports key and returns output as boolean
  *
  * @param {bytes} data - Public Key In Bytes
- * @returns {boolean} Boolean of successful import
+ * @returns {string} Key ID
  */
 const import_key = (data) => {
     if (!_gpg_exists()) throw new Error("GPG command does not exist");
@@ -97,7 +97,9 @@ const import_key = (data) => {
         input: data,
     });
 
-    return gpg.status === 0;
+    if (gpg.status !== 0) throw new Error(gpg.stderr.toString());
+
+    return gpg.stderr.toString().match(/gpg: key \w+: public key "(.+)" imported/)[1];
 };
 
 /**

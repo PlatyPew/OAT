@@ -109,11 +109,11 @@ def decrypt(key_id: str, data: bytes, options: list = []) -> bytes:
 
 def import_key(data: bytes, options: list = []) -> bool:
     """
-    Imports key and returns output as boolean
+    Imports key and returns key ID
 
     :param data: Public Key In Bytes
     :param options: Additional Options
-    :return: Boolean of successful import
+    :return: Key ID
     """
     if not _gpg_exists():
         raise Exception("GPG command does not exist")
@@ -122,9 +122,13 @@ def import_key(data: bytes, options: list = []) -> bool:
                                stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
-    process.communicate(input=data)
+    _, meta = process.communicate(input=data)
 
-    return process.wait() == 0
+    if process.wait() != 0:
+        raise Exception(meta)
+
+    from re import findall
+    return findall('''gpg: key \w+: public key "(.+)" imported''', meta.decode())[0]
 
 
 def export_key(key_id: str, options: list = []) -> bytes:

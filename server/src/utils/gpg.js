@@ -29,6 +29,17 @@ const sign = (keyId, data) => {
     return gpg.stdout;
 };
 
+const verify = (keyId, data) => {
+    if (!_gpg_exists()) throw new Error("GPG command does not exist");
+
+    const gpg = spawnSync("gpg", ["--verify"], {
+        input: data,
+    });
+
+    return gpg.stderr.includes(`<${keyId}>`) && gpg.status === 0;
+};
+
 module.exports = {
     sign: sign,
+    verify: verify,
 };

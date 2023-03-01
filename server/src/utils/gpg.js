@@ -122,6 +122,13 @@ const exportKey = (keyId) => {
     return gpg.stdout;
 };
 
+/**
+ * Generates key pair
+ *
+ * @param {string} keyId - Key ID
+ * @param {string} password - Password To Encrypt Key
+ * @returns {boolean} Boolean of successful generation
+ */
 const genKey = (keyId, password) => {
     if (!_gpg_exists()) throw new Error("GPG command does not exist");
 

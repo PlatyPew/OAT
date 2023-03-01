@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 
 // GPG + MongoDB Update Module
 const gpg = require('../utils/gpg');
-const update = require("../utils/update");
+const { updateByAccount, getGpgUid } = require("../utils/update");
 
 // OAK Module
 const oak = require('../../index');
@@ -26,17 +26,17 @@ router.post("/", async(req, res) => {
     const publickey = fs.readFileSync('./src/routes/key.asc'); // Temp solution
 
     try {
-        const iv = await update.updateByAccount(email, password, publickey);
+        const iv = await updateByAccount(email, password, publickey);
 
         if (iv) {
             console.log("success");
             // Encrypt IV with public key and send to client
-            const gpgUid = await update.getGpgUid(email);
+            const gpgUid = await getGpgUid(email);
             const encryptedIV = await gpg.encrypt(gpgUid, iv); // There is no assurance this key belongs to the named user
             console.log(encryptedIV);
             res.status(200).send({
                 ok: true,
-                token: Buffer.from(encryptedIV).toString('base64')
+                init: Buffer.from(encryptedIV).toString('base64')
             });
         }
         else {

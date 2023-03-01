@@ -94,7 +94,7 @@ const decrypt = (keyId, data) => {
  * @param {bytes} data - Public Key In Bytes
  * @returns {string} Key ID
  */
-const import_key = (data) => {
+const importKey = (data) => {
     if (!_gpg_exists()) throw new Error("GPG command does not exist");
 
     const gpg = spawnSync("gpg", ["--import"], {
@@ -112,7 +112,7 @@ const import_key = (data) => {
  * @param {string} keyId - Key To Export
  * @returns {bytes} Exported Key
  */
-const export_key = (keyId) => {
+const exportKey = (keyId) => {
     if (!_gpg_exists()) throw new Error("GPG command does not exist");
 
     const gpg = spawnSync("gpg", ["--export", keyId]);
@@ -122,7 +122,7 @@ const export_key = (keyId) => {
     return gpg.stdout;
 };
 
-const gen_key = (keyId, password) => {
+const genKey = (keyId, password) => {
     if (!_gpg_exists()) throw new Error("GPG command does not exist");
 
     const gpg = spawnSync("gpg", [
@@ -143,7 +143,7 @@ module.exports = {
     verify: verify,
     encrypt: encrypt,
     decrypt: decrypt,
-    import_key: import_key,
-    export_key: export_key,
-    gen_key: gen_key,
+    importKey: importKey,
+    exportKey: exportKey,
+    genKey: genKey,
 };

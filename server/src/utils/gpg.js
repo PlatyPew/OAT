@@ -55,11 +55,15 @@ const verify = (keyId, data) => {
  */
 const encrypt = (keyId, data) => {
     if (!_gpg_exists()) throw new Error("GPG command does not exist");
-    
-    const gpg = spawnSync("gpg", ["--recipient", keyId, "--trust-model", "always", "--output", "-", "--encrypt"], {
-        input: data,
-    });
-    
+
+    const gpg = spawnSync(
+        "gpg",
+        ["--recipient", keyId, "--trust-model", "always", "--output", "-", "--encrypt"],
+        {
+            input: data,
+        }
+    );
+
     if (gpg.stderr.length !== 0) throw new Error(gpg.stderr.toString());
 
     return gpg.stdout;

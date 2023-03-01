@@ -6,7 +6,7 @@ const commandExistsSync = require("command-exists").sync;
  *
  * @returns {boolean} Boolean result if gpg is installed
  */
-const _gpg_exists = () => {
+const _gpgExists = () => {
     return commandExistsSync("gpg");
 };
 
@@ -18,7 +18,7 @@ const _gpg_exists = () => {
  * @returns {bytes} Signed Data
  */
 const sign = (keyId, data) => {
-    if (!_gpg_exists()) throw new Error("GPG command does not exist");
+    if (!_gpgExists()) throw new Error("GPG command does not exist");
 
     const gpg = spawnSync("gpg", ["--local-user", keyId, "--output", "-", "--sign"], {
         input: data,
@@ -37,7 +37,7 @@ const sign = (keyId, data) => {
  * @returns {bytes} Boolean Of Successful Verification
  */
 const verify = (keyId, data) => {
-    if (!_gpg_exists()) throw new Error("GPG command does not exist");
+    if (!_gpgExists()) throw new Error("GPG command does not exist");
 
     const gpg = spawnSync("gpg", ["--verify"], {
         input: data,
@@ -54,7 +54,7 @@ const verify = (keyId, data) => {
  * @returns {bytes} Encrypted Data
  */
 const encrypt = (keyId, data) => {
-    if (!_gpg_exists()) throw new Error("GPG command does not exist");
+    if (!_gpgExists()) throw new Error("GPG command does not exist");
 
     const gpg = spawnSync(
         "gpg",
@@ -77,7 +77,7 @@ const encrypt = (keyId, data) => {
  * @returns {bytes} Decrypted Data
  */
 const decrypt = (keyId, data) => {
-    if (!_gpg_exists()) throw new Error("GPG command does not exist");
+    if (!_gpgExists()) throw new Error("GPG command does not exist");
 
     const gpg = spawnSync("gpg", ["--decrypt"], {
         input: data,
@@ -95,7 +95,7 @@ const decrypt = (keyId, data) => {
  * @returns {string} Key ID
  */
 const importKey = (data) => {
-    if (!_gpg_exists()) throw new Error("GPG command does not exist");
+    if (!_gpgExists()) throw new Error("GPG command does not exist");
 
     const gpg = spawnSync("gpg", ["--import"], {
         input: data,
@@ -113,7 +113,7 @@ const importKey = (data) => {
  * @returns {bytes} Exported Key
  */
 const exportKey = (keyId) => {
-    if (!_gpg_exists()) throw new Error("GPG command does not exist");
+    if (!_gpgExists()) throw new Error("GPG command does not exist");
 
     const gpg = spawnSync("gpg", ["--export", keyId]);
 
@@ -130,7 +130,7 @@ const exportKey = (keyId) => {
  * @returns {boolean} Boolean of successful generation
  */
 const genKey = (keyId, password) => {
-    if (!_gpg_exists()) throw new Error("GPG command does not exist");
+    if (!_gpgExists()) throw new Error("GPG command does not exist");
 
     const gpg = spawnSync("gpg", [
         "--batch",

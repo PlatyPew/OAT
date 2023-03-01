@@ -59,7 +59,9 @@ const updateByToken = async (token) => {
         return { rng, bool };
     } 
     else { // No documents with token as prevToken/newToken exist.
-        
+        const rng = "";
+        const bool = false;
+        return { rng, bool };
     }
 
     // If newToken == token, accept and generate new iv
@@ -69,23 +71,6 @@ const updateByToken = async (token) => {
     // If prevToken == token, reject and generate new iv 
     // send new iv
     // newToken = gen()
-
-    
-    // try {
-    //     const gpgUid = gpg.import_key(publickey);
-    //     acc.gpgUid = gpgUid;
-    // } catch {
-
-    // }
-
-    // let iv = oak.generateIV();
-
-    // Store token in both prevtoken and newtoken
-    // acc.prevToken = iv;
-    // acc.newToken = iv;
-    // acc.save();
-
-    // return iv;
 };
 
 const getGpgUid = async (email) => {

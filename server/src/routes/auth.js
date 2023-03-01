@@ -29,7 +29,6 @@ router.post("/", async(req, res) => {
         const iv = await updateByAccount(email, password, publickey);
 
         if (iv) {
-            console.log("success");
             // Encrypt IV with public key and send to client
             const gpgUid = await getGpgUid(email);
             const encryptedIV = await gpg.encrypt(gpgUid, iv); // There is no assurance this key belongs to the named user

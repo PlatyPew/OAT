@@ -11,7 +11,9 @@ const router = express.Router();
 
 router.get("/", async(req, res) => {
     res.setHeader("Content-Type", "application/json");
-    const token = req.body.token;
+    // const token = req.body.token;
+    const token = req.get("OAK");
+    const signature = req.get("OAK Signature");
 
     const { rng, bool } = await updateByToken(token);
     res.status(200).json({

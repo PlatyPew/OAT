@@ -32,7 +32,7 @@ router.post("/", async(req, res) => {
             // Encrypt IV with public key and send to client
             const gpgUid = await getGpgUid(email);
             const encryptedIV = await gpg.encrypt(gpgUid, iv); // There is no assurance this key belongs to the named user
-            console.log(encryptedIV);
+            
             res.status(200).send({
                 ok: true,
                 init: Buffer.from(encryptedIV).toString('base64')

@@ -118,6 +118,22 @@ const export_key = (keyId) => {
     return gpg.stdout;
 };
 
+const gen_key = (keyId, password) => {
+    if (!_gpg_exists()) throw new Error("GPG command does not exist");
+
+    const gpg = spawnSync("gpg", [
+        "--batch",
+        "--passphrase",
+        password,
+        "--quick-gen-key",
+        `OAK <${keyId}>`,
+        "default",
+        "default",
+    ]);
+
+    return gpg.status === 0;
+};
+
 module.exports = {
     sign: sign,
     verify: verify,
@@ -125,4 +141,5 @@ module.exports = {
     decrypt: decrypt,
     import_key: import_key,
     export_key: export_key,
+    gen_key: gen_key,
 };

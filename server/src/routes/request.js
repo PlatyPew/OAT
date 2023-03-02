@@ -3,7 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 
 // GPG + MongoDB Update Module
-const gpg = require('../utils/gpg');
+// const gpg = require('../utils/gpg');
 const { updateByToken } = require("../utils/update");
 
 // Setup the express server router
@@ -19,7 +19,7 @@ const router = express.Router();
  * 
  * @req.header {string} "OAK" - One-time API key/token
  * @req.header {string} "OAK Signature" - Digital Signature of OAK
- * @res.send {bool, rng, metadata} - Boolean value to indicate result, Base64 encoded and encrypted RNG, metadata
+ * @res.send {bool, string, object} - Boolean value to indicate result, Base64 encoded and encrypted RNG, metadata
  */
 router.get("/", async(req, res) => {
     res.setHeader("Content-Type", "application/json");
@@ -27,7 +27,7 @@ router.get("/", async(req, res) => {
     const token = req.get("OAK");
     const signature = req.get("OAK Signature");
 
-    const { rng, metadata, bool } = await updateByToken(token);
+    const { rng, metadata, bool } = updateByToken(token, signature);
     res.status(200).json({
         ok: bool,
         rng: rng,

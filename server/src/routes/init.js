@@ -26,7 +26,7 @@ const router = express.Router();
  * @req.body {string} email - Account email 
  * @req.body {string} password - Account password 
  * @req.body {string} publickey - Client GPG public key
- * @res.send {bool, rng, metadata} - Boolean value to indicate result, Base64 encoded and encrypted RNG, metadata
+ * @res.send {bool, string, object} - Boolean value to indicate result, Base64 encoded and encrypted RNG, metadata
  */
 router.post("/", async(req, res) => {
     res.setHeader("Content-Type", "application/json");

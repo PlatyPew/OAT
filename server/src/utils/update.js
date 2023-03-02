@@ -20,7 +20,7 @@ const updateByAccount = async (email, publicKey) => {
 
     if (!publicKey) return false;
     // OAK init function
-    const { gpgUid, encryptedRNG, nextToken, metadata } = oak.init(publicKey);
+    const { gpgUid, encryptedRNG, nextToken, metadata } = oak.initKey(publicKey);
     // Store token in both prevtoken and nextToken
     acc.prevToken = nextToken;
     acc.nextToken = nextToken;

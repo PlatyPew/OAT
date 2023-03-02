@@ -1,8 +1,23 @@
 const crypto = require("crypto");
+const { userInfo, hostname } = require("os");
 const gpg = require("./gpg");
+
+const SYSTEM_KEY_ID = `${userInfo().username}@${hostname()}`;
+
+const _oakPass = () => {
+    return process.env.OAK_PASS !== undefined;
+}
 
 const _genRNG = () => {
     return crypto.randomBytes(64);
+};
+
+const init = () => {
+    const oakPass = process.env.OAK_PASS;
+
+    if (!_oakPass()) throw new Error("Environment variable OAK_PASS is not set");
+
+    gpg.genKey(SYSTEM_KEY_ID, oakPass);
 };
 
 /**
@@ -11,7 +26,7 @@ const _genRNG = () => {
  * @param {string} pubKey - Public Key Of Client In Base64
  * @returns {string, string, string, object} Key ID, base64 encoded and encrypted RNG, next token, metadata
  */
-const init = (pubKey) => {
+const initKey = (pubKey) => {
     const pubKeyBytes = Buffer.from(pubKey, "base64");
 
     const rng = _genRNG();
@@ -59,6 +74,6 @@ const rollToken = (keyId, currToken, signature) => {
 };
 
 module.exports = {
-    init: init,
+    initKey: initKey,
     rollToken: rollToken,
 };

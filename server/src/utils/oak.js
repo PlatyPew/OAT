@@ -14,13 +14,15 @@ const _genRNG = () => {
 const init = (pubKey) => {
     const pubKeyBytes = Buffer.from(pubKey, "base64");
 
+    const rng = _genRNG();
+
     const keyId = gpg.importKey(pubKeyBytes);
-    const encryptedRNG = gpg.encrypt(keyId, _genRNG()).toString("base64");
+    const encryptedRNG = gpg.encrypt(keyId, rng).toString("base64");
 
     // TODO: Generate secret
-    const secret = undefined;
+    const metadata = undefined;
 
-    return { keyId, encryptedRNG, secret };
+    return { keyId, encryptedRNG, metadata };
 };
 
 /**
@@ -45,9 +47,9 @@ const rollKey = (keyId, currToken, cb) => {
     const encryptedRNG = gpg.encrypt(keyId, rng).toString("base64");
 
     // TODO: Generate secret
-    const secret = undefined;
+    const metadata = undefined;
 
-    return { encryptedRNG, secret };
+    return { encryptedRNG, metadata };
 };
 
 module.exports = {

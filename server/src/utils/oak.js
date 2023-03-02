@@ -9,12 +9,16 @@ const _genRNG = () => {
  * Initialise the OAK process
  *
  * @param {string} pubKey - Public Key Of Client In Base64
- * @returns {string, string, string} Key ID and base64 encoded and encrypted RNG
+ * @returns {string, string, string, string} Key ID, base64 encoded and encrypted RNG, next token, metadata
  */
 const init = (pubKey) => {
     const pubKeyBytes = Buffer.from(pubKey, "base64");
 
     const rng = _genRNG();
+    const nextToken = crypto
+        .createHash("sha512")
+        .update(rng)
+        .digest("base64");
 
     const keyId = gpg.importKey(pubKeyBytes);
     const encryptedRNG = gpg.encrypt(keyId, rng).toString("base64");
@@ -22,7 +26,7 @@ const init = (pubKey) => {
     // TODO: Generate secret
     const metadata = undefined;
 
-    return { keyId, encryptedRNG, metadata };
+    return { gpgUid:keyId, encryptedRNG, nextToken, metadata };
 };
 
 /**
@@ -30,10 +34,9 @@ const init = (pubKey) => {
  *
  * @param {string} keyId - Key To Encrypt With
  * @param {string} currToken - Current Token Used
- * @param {string} cb - Next Token
- * @returns {string, string} Encrypted RNG value
+ * @returns {string, string} Encrypted RNG value, next token, metadata
  */
-const rollKey = (keyId, currToken, cb) => {
+const rollToken = (keyId, currToken) => {
     const currTokenBytes = Buffer.from(currToken, "base64");
 
     const rng = _genRNG();
@@ -42,17 +45,16 @@ const rollKey = (keyId, currToken, cb) => {
         .createHash("sha512")
         .update(Buffer.concat([currTokenBytes, rng]))
         .digest("base64");
-    cb(nextToken);
-
+    
     const encryptedRNG = gpg.encrypt(keyId, rng).toString("base64");
 
     // TODO: Generate secret
     const metadata = undefined;
 
-    return { encryptedRNG, metadata };
+    return { encryptedRNG, nextToken, metadata };
 };
 
 module.exports = {
     init: init,
-    rollKey: rollKey,
+    rollToken: rollToken,
 };

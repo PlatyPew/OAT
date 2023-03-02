@@ -29,12 +29,12 @@ def sign(key_id: str, data: bytes, options: list = []) -> bytes:
                                stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
-    output, error = process.communicate(input=data)
+    stdout, stderr = process.communicate(input=data)
 
-    if error:
-        raise Exception(error)
+    if stderr:
+        raise Exception(stderr)
 
-    return output
+    return stdout
 
 
 def verify(key_id: str, data: bytes, options: list = []) -> bytes:
@@ -82,12 +82,12 @@ def encrypt(key_id: str, data: bytes, options: list = []) -> bytes:
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE)
-    output, error = process.communicate(input=data)
+    stdout, stderr = process.communicate(input=data)
 
-    if error:
-        raise Exception(error)
+    if stderr:
+        raise Exception(stderr)
 
-    return output
+    return stdout
 
 
 def decrypt(key_id: str, data: bytes, options: list = []) -> bytes:
@@ -106,12 +106,12 @@ def decrypt(key_id: str, data: bytes, options: list = []) -> bytes:
                                stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
-    output, meta = process.communicate(input=data)
+    stdout, stderr = process.communicate(input=data)
 
-    if f"<{key_id}>".encode() not in meta:
-        raise Exception(meta)
+    if f"<{key_id}>".encode() not in stderr:
+        raise Exception(stderr)
 
-    return output
+    return stdout
 
 
 def import_key(data: bytes, options: list = []) -> bool:
@@ -129,13 +129,13 @@ def import_key(data: bytes, options: list = []) -> bool:
                                stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
-    _, meta = process.communicate(input=data)
+    _, stderr = process.communicate(input=data)
 
     if process.wait() != 0:
-        raise Exception(meta)
+        raise Exception(stderr)
 
     from re import findall
-    return findall('''gpg: key \w+: public key "(.+)" imported''', meta.decode())[0]
+    return findall('''gpg: key \w+: public key "(.+)" imported''', stderr.decode())[0]
 
 
 def export_key(key_id: str, options: list = []) -> bytes:
@@ -153,12 +153,12 @@ def export_key(key_id: str, options: list = []) -> bytes:
                                stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
-    output, error = process.communicate()
+    stdout, stderr = process.communicate()
 
-    if error:
-        raise Exception(error)
+    if stderr:
+        raise Exception(stderr)
 
-    return output
+    return stdout
 
 
 def gen_key(key_id: str, password: str, options: list = []) -> bool:

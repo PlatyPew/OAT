@@ -37,25 +37,31 @@ def sign(key_id: str, data: bytes, options: list = []) -> bytes:
     return output
 
 
-def verify(key_id: str, data: bytes, options: list = []) -> bool:
+def verify(key_id: str, data: bytes, options: list = []) -> bytes:
     """
-    Verify data and returns output boolean
+    Verify and returns data
 
     :param key_id: Key To Use
     :param data: Data To Verify
     :param options: Additional Options
-    :return: Boolean Of Successful Verification
+    :return: Signed Content
     """
     if not _gpg_exists():
         raise Exception("GPG command does not exist")
 
-    process = subprocess.Popen(["gpg"] + options + ["--verify"],
+    process = subprocess.Popen(["gpg"] + options + ["--decrypt"],
                                stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
-    _, output = process.communicate(input=data)
+    stdout, stderr = process.communicate(input=data)
 
-    return f"<{key_id}>".encode() in output and process.wait() == 0
+    if process.wait() != 0:
+        raise Exception(stderr)
+
+    if f"<{key_id}>".encode() not in stderr:
+        raise Exception("Invalid Key ID")
+
+    return stdout
 
 
 def encrypt(key_id: str, data: bytes, options: list = []) -> bytes:

@@ -28,10 +28,7 @@ const initKey = (pubKey) => {
     const pubKeyBytes = Buffer.from(pubKey, "base64");
 
     const rng = _genRNG();
-    const nextToken = crypto
-        .createHash("sha512")
-        .update(rng)
-        .digest("base64");
+    const nextToken = crypto.createHash("sha512").update(rng).digest("base64");
 
     const keyId = gpg.importKey(pubKeyBytes);
     const encryptedRNG = gpg.encrypt(keyId, rng).toString("base64");
@@ -39,7 +36,7 @@ const initKey = (pubKey) => {
     // TODO: Generate secret
     const metadata = undefined;
 
-    return { gpgUid:keyId, encryptedRNG, nextToken, metadata };
+    return { gpgUid: keyId, encryptedRNG, nextToken, metadata };
 };
 
 /**
@@ -62,7 +59,7 @@ const rollToken = (keyId, currToken, signature) => {
         .createHash("sha512")
         .update(Buffer.concat([currTokenBytes, rng]))
         .digest("base64");
-    
+
     const encryptedRNG = gpg.encrypt(keyId, rng).toString("base64");
 
     // TODO: Generate secret
@@ -72,6 +69,7 @@ const rollToken = (keyId, currToken, signature) => {
 };
 
 module.exports = {
+    init: init,
     initKey: initKey,
     rollToken: rollToken,
 };

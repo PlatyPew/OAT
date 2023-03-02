@@ -3,7 +3,7 @@ const express = require('express');
 const mongoose = require("mongoose");
 
 // OAK Module
-const oak = require('./index');
+// const oak = require('./index');
 
 // Setup the express server
 const app = express();
@@ -13,7 +13,7 @@ const PORT = 8080;
 app.use(express.json({limit:"8mb"}));
 
 // User Credential Authentication + Generate IV
-const auth = require("./src/routes/auth");
+const auth = require("./src/routes/init");
 app.use("/api/auth", auth);
 
 const request = require("./src/routes/request");

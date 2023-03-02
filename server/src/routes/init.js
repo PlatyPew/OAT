@@ -4,10 +4,11 @@ const mongoose = require("mongoose");
 
 // GPG + MongoDB Update Module
 const gpg = require('../utils/gpg');
-const { updateByAccount, getGpgUid } = require("../utils/update");
+const auth = require("../utils/auth");
+const update = require("../utils/update");
 
 // OAK Module
-const oak = require('../../index');
+const oak = require('../utils/oak');
 
 const fs = require('fs'); // To be removed and uninstalled
 
@@ -25,28 +26,31 @@ router.post("/", async(req, res) => {
     
     const publickey = fs.readFileSync('./src/routes/key.asc'); // Temp solution
 
-    try {
-        const iv = await updateByAccount(email, password, publickey);
+    const valid = await auth.verifyCredentials(email, password);
+    if (valid) {
+        try {
 
-        if (iv) {
-            // Encrypt IV with public key and send to client
-            const gpgUid = await getGpgUid(email);
-            const encryptedIV = await gpg.encrypt(gpgUid, iv); // There is no assurance this key belongs to the named user
+            const {encryptedRNG, metadata} = await update.updateByAccount(email, publickey);
             
-            res.status(200).send({
+            res.status(200).json({
                 ok: true,
-                init: Buffer.from(encryptedIV).toString('base64')
+                response: encryptedRNG,
+                metadata: metadata
+            });
+        } catch (err) {
+            res.status(503).json({
+                ok: false,
+                response: err.toString()
             });
         }
-        else {
-            throw new Error("Authentication failed.");
-        }
-    } catch (err) {
+    }
+    else {
         res.status(503).json({
             ok: false,
-            response: err.toString()
+            response: "Not authorized."
         });
     }
+    
 });
 
 // Export the router

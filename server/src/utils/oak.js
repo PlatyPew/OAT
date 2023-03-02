@@ -5,19 +5,17 @@ const gpg = require("./gpg");
 const SYSTEM_KEY_ID = `${userInfo().username}@${hostname()}`;
 
 const _oakPass = () => {
-    return process.env.OAK_PASS !== undefined;
-}
+    const oakPass = process.env.OAK_PASS;
+    if (oakPass === undefined) throw new Error("Environment variable OAK_PASS is not set");
+    else return oakPass;
+};
 
 const _genRNG = () => {
     return crypto.randomBytes(64);
 };
 
 const init = () => {
-    const oakPass = process.env.OAK_PASS;
-
-    if (!_oakPass()) throw new Error("Environment variable OAK_PASS is not set");
-
-    gpg.genKey(SYSTEM_KEY_ID, oakPass);
+    gpg.genKey(SYSTEM_KEY_ID, _oakPass());
 };
 
 /**

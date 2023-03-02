@@ -3,6 +3,13 @@ const { AccountInfoModel } = require("../models/AccountModel");
 // GPG Module
 const gpg = require('./gpg');
 
+/**
+ * Verify and authenticate account on MongoDB
+ * 
+ * @param {string} email - Account email 
+ * @param {string} password - Account password 
+ * @returns {boolean} True: Account authenticated, False: Account not found / Password incorrect
+ */
 const verifyCredentials = async (email, password) => {
     const acc = await AccountInfoModel.findOne({ email: email });
 
@@ -30,7 +37,7 @@ const verifyCredentials = async (email, password) => {
 //             // Query MongoDB for Document with token
 //             acc = await AccountInfoModel.findOne({ $or: [
 //                 { prevToken: search },
-//                 { newToken: search }
+//                 { nextToken: search }
 //             ]});
 
 //             if (!acc) return gpgUid;

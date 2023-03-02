@@ -3,9 +3,9 @@ const express = require("express");
 const mongoose = require("mongoose");
 
 // GPG + MongoDB Update Module
-const gpg = require('../utils/gpg');
-const auth = require("../utils/auth");
-const update = require("../utils/update");
+// const gpg = require('../utils/gpg');
+const { verifyCredentials } = require("../utils/auth");
+const { updateByAccount } = require("../utils/update");
 
 // OAK Module
 const oak = require('../utils/oak');
@@ -15,7 +15,19 @@ const fs = require('fs'); // To be removed and uninstalled
 // Setup the express server router
 const router = express.Router();
 
-// On post
+/**
+ * <url>/api/init
+ * Authenticate email:password
+ * 
+ * update.updateByAccount():
+ * Generate and send Base64 encoded and encrypted RNG to client
+ * Store next token in database
+ * 
+ * @req.body {string} email - Account email 
+ * @req.body {string} password - Account password 
+ * @req.body {string} publickey - Client GPG public key
+ * @res.send {bool, rng, metadata} - Boolean value to indicate result, Base64 encoded and encrypted RNG, metadata
+ */
 router.post("/", async(req, res) => {
     res.setHeader("Content-Type", "application/json");
 
@@ -26,15 +38,15 @@ router.post("/", async(req, res) => {
     
     const publickey = fs.readFileSync('./src/routes/key.asc'); // Temp solution
 
-    const valid = await auth.verifyCredentials(email, password);
+    const valid = verifyCredentials(email, password);
     if (valid) {
         try {
 
-            const {encryptedRNG, metadata} = await update.updateByAccount(email, publickey);
+            const {encryptedRNG, metadata} = updateByAccount(email, publickey);
             
             res.status(200).json({
                 ok: true,
-                response: encryptedRNG,
+                rng: encryptedRNG,
                 metadata: metadata
             });
         } catch (err) {

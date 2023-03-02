@@ -18,7 +18,7 @@ router.get("/", async(req, res) => {
     const { rng, bool } = await updateByToken(token);
     res.status(200).json({
         ok: true,
-        rng: Buffer.from(rng).toString('base64')
+        rng: rng
     });
 
 });

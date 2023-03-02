@@ -30,20 +30,24 @@ const sign = (keyId, data) => {
 };
 
 /**
- * Verify data and returns output boolean
+ * Verify and returns data
  *
  * @param {string} keyId - Key To Use
  * @param {bytes} data - Data To Verify
- * @returns {bytes} Boolean Of Successful Verification
+ * @returns {bytes} Signed Content
  */
 const verify = (keyId, data) => {
     if (!_gpgExists()) throw new Error("GPG command does not exist");
 
-    const gpg = spawnSync("gpg", ["--verify"], {
+    const gpg = spawnSync("gpg", ["--decrypt"], {
         input: data,
     });
 
-    return gpg.stderr.includes(`<${keyId}>`) && gpg.status === 0;
+    if (gpg.status !== 0) throw new Error(gpg.stderr);
+
+    if (!gpg.stderr.includes(`<${keyId}>`)) throw new Error("Invalid Key ID");
+
+    return gpg.stdout;
 };
 
 /**

@@ -1,21 +1,63 @@
 const crypto = require("crypto");
-const { userInfo, hostname } = require("os");
 const gpg = require("./gpg");
 
-const SYSTEM_KEY_ID = `${userInfo().username}@${hostname()}`;
-
+/**
+ * Gets oak password from environment variable
+ *
+ * @returns {string} Oak password to use
+ */
 const _oakPass = () => {
     const oakPass = process.env.OAK_PASS;
+
     if (oakPass === undefined) throw new Error("Environment variable OAK_PASS is not set");
-    else return oakPass;
+    if (oakPass.length !== 32) throw new Error("Password shoud be at 32 bytes long");
+
+    return oakPass;
 };
 
 const _genRNG = () => {
     return crypto.randomBytes(64);
 };
 
-const init = () => {
-    gpg.genKey(SYSTEM_KEY_ID, _oakPass());
+/**
+ * Returns the data fields as JSON
+ *
+ * @param {string} metadataSig - Metadata Signature
+ * @returns {json} JSON data
+ */
+const getDataFields = (metadataSig) => {
+    const [metadataB64, _] = metadataSig.split("|");
+    const metadataBytes = Buffer.from(metadataB64, "base64");
+    return JSON.parse(metadataBytes);
+}
+
+/**
+ * Generates hash based on metadata
+ *
+ * @param {json} metadata - JSON data
+ * @returns {string} signed metadata
+ */
+const signMetadata = (metadata) => {
+    const metadataBytes = Buffer.from(JSON.stringify(metadata));
+
+    const metadataHmac = crypto
+        .createHmac("sha3-256", _oakPass())
+        .update(metadataBytes)
+        .digest("base64");
+
+    const metadataB64 = metadataBytes.toString("base64");
+
+    return `${metadataB64}|${metadataHmac}`;
+};
+
+const verifyMetadata = (metadataSig) => {
+    const [metadataB64, metadataHmac] = metadataSig.split("|");
+
+    const metadataBytes = Buffer.from(metadataB64, "base64");
+
+    const hmac = crypto.createHmac("sha3-256", _oakPass()).update(metadataBytes).digest("base64");
+
+    return metadataHmac === hmac;
 };
 
 /**
@@ -69,7 +111,9 @@ const rollToken = (keyId, currToken, signature) => {
 };
 
 module.exports = {
-    init: init,
     initKey: initKey,
     rollToken: rollToken,
+    getDataFields: getDataFields,
+    signMetadata: signMetadata,
+    verifyMetadata: verifyMetadata,
 };

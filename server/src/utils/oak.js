@@ -9,7 +9,7 @@ const _genRNG = () => {
  * Initialise the OAK process
  *
  * @param {string} pubKey - Public Key Of Client In Base64
- * @returns {string, string, string, string} Key ID, base64 encoded and encrypted RNG, next token, metadata
+ * @returns {string, string, string, object} Key ID, base64 encoded and encrypted RNG, next token, metadata
  */
 const init = (pubKey) => {
     const pubKeyBytes = Buffer.from(pubKey, "base64");
@@ -34,10 +34,14 @@ const init = (pubKey) => {
  *
  * @param {string} keyId - Key To Encrypt With
  * @param {string} currToken - Current Token Used
- * @returns {string, string} Encrypted RNG value, next token, metadata
+ * @param {string} signature - Client Signature of token
+ * @returns {string, string, boolean, object} Encrypted RNG value, next token, metadata
  */
-const rollToken = (keyId, currToken) => {
+const rollToken = (keyId, currToken, signature) => {
     const currTokenBytes = Buffer.from(currToken, "base64");
+
+    // -WIP- modify verify() function to check signature against public key and data
+    //const signatureValid = verify(keyId,)
 
     const rng = _genRNG();
 
@@ -51,7 +55,7 @@ const rollToken = (keyId, currToken) => {
     // TODO: Generate secret
     const metadata = undefined;
 
-    return { encryptedRNG, nextToken, metadata };
+    return { encryptedRNG, nextToken, signatureValid, metadata };
 };
 
 module.exports = {

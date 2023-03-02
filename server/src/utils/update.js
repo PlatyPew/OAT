@@ -3,6 +3,9 @@ const { AccountInfoModel } = require("../models/AccountModel");
 // OAK Module
 const oak = require('./oak');
 
+// GPG Module
+const gpg = require('./gpg');
+
 /**
  * Insert values into client's account token and public key UID
  * 
@@ -30,21 +33,23 @@ const updateByAccount = async (email, publicKey) => {
 };
 
 /**
+ * Verify token via client GPG signature
  * Generate new token for client to use 
  * Update nextToken in MongoDB database 
  * Replace prevToken if token supplied by client is valid; Validity is based on if the token supplied is the next token or 
  * 
  * @param {string} token - Token supplied by client
+ * @param {string} signature - GPG Signature supplied by client to be verified (Base64 encoded)
  * @returns {string, object, boolean} Base64 encoded and encrypted RNG, metadata, boolean value for token
  */
-const updateByToken = async (token) => {
+const updateByToken = async (token, signature) => {
     const acc = await AccountInfoModel.findOne({ $or: [
         { prevToken: token },
         { nextToken: token }
     ]});
 
     if (acc.nextToken === token) { // Documents with token as nextToken exist.
-        const { encryptedRNG, nextToken, metadata } = oak.rollToken(acc.gpgUid,token);
+        const { encryptedRNG, nextToken, metadata } = oak.rollToken(acc.gpgUid, token, signature);
         const newTokenBoolean = true;
 
         acc.prevToken = token;
@@ -56,7 +61,7 @@ const updateByToken = async (token) => {
         return { encryptedRNG, metadata, bool: newTokenBoolean };
     } 
     else if (acc.prevToken === token) { // Documents with token only as prevToken exist.
-        const { encryptedRNG, nextToken, metadata } = oak.rollToken(acc.gpgUid, token);
+        const { encryptedRNG, nextToken, metadata } = oak.rollToken(acc.gpgUid, token, signature);
         const newTokenBoolean = false;
 
         acc.nextToken = nextToken;

@@ -10,8 +10,6 @@ const { updateByAccount } = require("../utils/update");
 // OAK Module
 const oak = require('../utils/oak');
 
-const fs = require('fs'); // To be removed and uninstalled
-
 // Setup the express server router
 const router = express.Router();
 
@@ -35,10 +33,8 @@ router.post("/", async(req, res) => {
     // Get user from the database
     const email = req.body.email;
     const password = req.body.password;
-    //const publickey = req.body.publickey;
+    const publicKeyB64 = req.body.publickey;
     
-    const publickey = fs.readFileSync('./src/routes/key.asc'); // Temp solution
-
     try {
         verifyCredentials(email, password);
 

@@ -161,14 +161,14 @@ def export_key(key_id: str, options: list = []) -> bytes:
     return stdout
 
 
-def gen_key(key_email: str, password: str, options: list = []) -> bool:
+def gen_key(key_email: str, password: str, options: list = []) -> str:
     """
     Generates key pair
 
     :param key_email: Key Email
     :param password: Password To Encrypt Key
     :param options: Additional Options
-    :return: Boolean of successful generation
+    :return: Key ID of generated key
     """
     if not _gpg_exists():
         raise Exception("GPG command does not exist")
@@ -181,6 +181,10 @@ def gen_key(key_email: str, password: str, options: list = []) -> bool:
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
 
-    process.communicate()
+    _, stderr = process.communicate()
 
-    return process.wait() == 0
+    if process.wait() != 0:
+        raise Exception(stderr)
+
+    from re import findall
+    return findall('''/([A-F0-9]{40})\.''', stderr.decode())[0]

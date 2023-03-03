@@ -20,11 +20,11 @@ const _gpgExists = () => {
 const sign = (keyId, data) => {
     if (!_gpgExists()) throw new Error("GPG command does not exist");
 
-    const gpg = spawnSync("gpg", ["--local-user", keyId, "--output", "-", "--sign"], {
+    const gpg = spawnSync("gpg", ["--default-key", keyId, "--output", "-", "--sign"], {
         input: data,
     });
 
-    if (gpg.stderr.length !== 0) throw new Error(gpg.stderr);
+    if (gpg.status !== 0) throw new Error(gpg.stderr);
 
     return gpg.stdout;
 };
@@ -45,7 +45,7 @@ const verify = (keyId, data) => {
 
     if (gpg.status !== 0) throw new Error(gpg.stderr);
 
-    if (!gpg.stderr.includes(`<${keyId}>`)) throw new Error("Invalid Key ID");
+    if (!gpg.stderr.includes(` ${keyId}\n`)) throw new Error("Invalid Key ID");
 
     return gpg.stdout;
 };
@@ -76,18 +76,17 @@ const encrypt = (keyId, data) => {
 /**
  * Decrypt data and returns output as bytes
  *
- * @param {string} keyId - Key To Use
  * @param {bytes} data - Data To Decrypt
  * @returns {bytes} Decrypted Data
  */
-const decrypt = (keyId, data) => {
+const decrypt = (data) => {
     if (!_gpgExists()) throw new Error("GPG command does not exist");
 
     const gpg = spawnSync("gpg", ["--decrypt"], {
         input: data,
     });
 
-    if (!gpg.stderr.includes(`<${keyId}>`)) throw new Error(gpg.stderr.toString());
+    if (gpg.status !== 0) throw new Error(gpg.stderr.toString());
 
     return gpg.stdout;
 };
@@ -101,13 +100,13 @@ const decrypt = (keyId, data) => {
 const importKey = (data) => {
     if (!_gpgExists()) throw new Error("GPG command does not exist");
 
-    const gpg = spawnSync("gpg", ["--import"], {
+    const gpg = spawnSync("gpg", ["--import-options", "import-show", "--import"], {
         input: data,
     });
 
     if (gpg.status !== 0) throw new Error(gpg.stderr.toString());
 
-    return gpg.stderr.toString().match(/gpg: key \w+: public key "(.+)" imported/)[1];
+    return gpg.stdout.toString().match(/.+ \[expires: .+\]\s+(.+)/)[1];
 };
 
 /**
@@ -129,11 +128,11 @@ const exportKey = (keyId) => {
 /**
  * Generates key pair
  *
- * @param {string} keyId - Key ID
+ * @param {string} keyEmail - Key Email
  * @param {string} password - Password To Encrypt Key
  * @returns {boolean} Boolean of successful generation
  */
-const genKey = (keyId, password) => {
+const genKey = (keyEmail, password) => {
     if (!_gpgExists()) throw new Error("GPG command does not exist");
 
     const gpg = spawnSync("gpg", [
@@ -141,7 +140,7 @@ const genKey = (keyId, password) => {
         "--passphrase",
         password,
         "--quick-gen-key",
-        `OAK <${keyId}>`,
+        `OAK <${keyEmail}>`,
         "default",
         "default",
     ]);

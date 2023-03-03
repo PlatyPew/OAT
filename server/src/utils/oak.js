@@ -139,6 +139,7 @@ const initToken = (pubKeyB64, cb) => {
 /**
  * authenticate the token
  *
+ * @async
  * @param {function} getKeyFunc - function to fetch the key from the server
  * @param {string} token - token sent from the client
  * @returns {json} key id and current key
@@ -162,6 +163,7 @@ const _authToken = async (getKeyFunc, token) => {
 /**
  * roll the next key
  *
+ * @async
  * @param {function} getKeyFunc - function to fetch the key from the server
  * @param {string} token - tokent sent from the client
  * @param {json} newfields - new session data fields to update

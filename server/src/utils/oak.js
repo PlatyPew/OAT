@@ -125,15 +125,15 @@ const initToken = (pubKeyB64, cb) => {
     const keyId = gpg.importKey(pubKeyBytes);
 
     const rng = _genRNG();
-    const nextKey = crypto.createHmac("sha3-512", _oakPass()).update(rng).digest();
-    cb(keyId, nextKey);
+    const nextApiKey = crypto.createHmac("sha3-512", _oakPass()).update(rng).digest();
+    cb(keyId, nextApiKey);
 
-    const encNextKeyB64 = gpg.encrypt(keyId, nextKey).toString("base64");
+    const encNextApiKeyB64 = gpg.encrypt(keyId, nextApiKey).toString("base64");
 
     const fields = _insertKeyID(keyId, {});
     const data = _signSessionData(fields);
 
-    return `${encNextKeyB64}-${data}`;
+    return `${encNextApiKeyB64}-${data}`;
 };
 
 /**
@@ -150,13 +150,13 @@ const _authToken = (getKeyFunc, token) => {
 
     const keyId = fields.pubkeyid;
 
-    const clientKey = gpg.verify(keyId, signedKey);
+    const clientApiKey = gpg.verify(keyId, signedKey);
 
     const serverKey = getKeyFunc(keyId);
 
-    if (Buffer.compare(clientKey, serverKey) !== 0) return false;
+    if (Buffer.compare(clientApiKey, serverApiKey) !== 0) return false;
 
-    return { keyId, serverKey };
+    return { keyId, serverKey: serverApiKey };
 };
 
 /**
@@ -174,11 +174,11 @@ const rollToken = (getKeyFunc, token, newfields, cb) => {
 
     const { keyId, serverKey } = auth;
     const rng = _genRNG();
-    const nextKey = crypto.createHmac("sha3-512", serverKey).update(rng).digest();
+    const nextApiKey = crypto.createHmac("sha3-512", serverKey).update(rng).digest();
 
-    cb(keyId, nextKey);
+    cb(keyId, nextApiKey);
 
-    const encNextKeyB64 = gpg.encrypt(keyId, nextKey).toString("base64");
+    const encNextKeyB64 = gpg.encrypt(keyId, nextApiKey).toString("base64");
 
     const fields = _insertKeyID(keyId, newfields);
     const data = _signSessionData(fields);

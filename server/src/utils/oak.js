@@ -31,14 +31,14 @@ const _genRNG = () => {
  * @returns {array} Array of base64 values
  */
 const _splitToken = (token) => {
-    const [keyB64, data] = token.split("-");
+    const [signedKeyB64, data] = token.split("-");
     const [fieldsB64, hmacB64] = data.split("|");
 
-    const key = Buffer.from(keyB64, "base64");
+    const signedKey = Buffer.from(signedKeyB64, "base64");
     const fields = JSON.parse(Buffer.from(fieldsB64, "base64"));
     const hmac = Buffer.from(hmacB64, "base64");
 
-    return { key, fields, hmac };
+    return { signedKey, fields, hmac };
 };
 
 /**
@@ -74,7 +74,7 @@ const _stripKeyID = (fields) => {
  * @param {string} metadataSig - Metadata Signature
  * @returns {json} JSON data
  */
-const extractSessionData = (token) => {
+const getSessionData = (token) => {
     const { fields, hmac } = _splitToken(token);
 
     if (!_verifySessionData(fields, hmac)) throw new Error("Data Has Been Tampered");
@@ -99,7 +99,9 @@ const _signSessionData = (fields) => {
 };
 
 const _verifySessionData = (fields, hmac) => {
-    const calculatedHmac = crypto.createHmac("sha3-512", _oakPass()).update(fields).digest();
+    const fieldBytes = Buffer.from(JSON.stringify(fields));
+
+    const calculatedHmac = crypto.createHmac("sha3-512", _oakPass()).update(fieldBytes).digest();
 
     return Buffer.compare(calculatedHmac, hmac) === 0;
 };
@@ -116,7 +118,7 @@ const initToken = (pubKeyB64, cb) => {
 
     const rng = _genRNG();
     const nextKey = crypto.createHmac("sha3-512", "").update(rng).digest();
-    cb(nextKey);
+    cb(keyId, nextKey);
 
     const encNextKeyB64 = gpg.encrypt(keyId, nextKey).toString("base64");
 
@@ -124,6 +126,20 @@ const initToken = (pubKeyB64, cb) => {
     const data = _signSessionData(fields);
 
     return `${encNextKeyB64}-${data}`;
+};
+
+const authToken = (getKeyFunc, token) => {
+    const { signedKey, fields, hmac } = _splitToken(token);
+
+    if (!_verifySessionData(fields, hmac)) throw new Error("Data Has Been Tampered");
+
+    const keyId = fields.pubkeyid;
+
+    const clientKey = gpg.verify(keyId, signedKey);
+
+    const serverKey = getKeyFunc(keyId);
+
+    return Buffer.compare(clientKey, serverKey) === 0;
 };
 
 /**
@@ -134,29 +150,11 @@ const initToken = (pubKeyB64, cb) => {
  * @param {string} signature - Client Signature of token
  * @returns {string, string, boolean, object} Encrypted RNG value, next token, metadata
  */
-const rollToken = (keyId, currToken, signature) => {
-    const currTokenBytes = Buffer.from(currToken, "base64");
-
-    // -WIP- modify verify() function to check signature against public key and data
-    //const signatureValid = verify(keyId,)
-
-    const rng = _genRNG();
-
-    const nextToken = crypto
-        .createHash("sha3-512")
-        .update(Buffer.concat([currTokenBytes, rng]))
-        .digest("base64");
-
-    const encryptedRNG = gpg.encrypt(keyId, rng).toString("base64");
-
-    // TODO: Generate secret
-    const metadata = undefined;
-
-    return { encryptedRNG, nextToken, signatureValid, metadata };
-};
+const rollToken = (token, newfields, cb) => {};
 
 module.exports = {
     initToken: initToken,
     rollToken: rollToken,
-    extractSessionData: extractSessionData,
+    authToken: authToken,
+    getSessionData: getSessionData,
 };

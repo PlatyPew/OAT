@@ -143,7 +143,7 @@ const initToken = (pubKeyB64, cb) => {
  * @param {string} token - token sent from the client
  * @returns {json} key id and current key
  */
-const _authToken = (getKeyFunc, token) => {
+const _authToken = async (getKeyFunc, token) => {
     const { signedKey, fields, hmac } = _splitToken(token);
 
     if (!_verifySessionData(fields, hmac)) throw new Error("Data Has Been Tampered");
@@ -152,7 +152,7 @@ const _authToken = (getKeyFunc, token) => {
 
     const clientApiKey = gpg.verify(keyId, signedKey);
 
-    const serverKey = getKeyFunc(keyId);
+    const serverApiKey = await getKeyFunc(keyId);
 
     if (Buffer.compare(clientApiKey, serverApiKey) !== 0) return false;
 
@@ -168,8 +168,8 @@ const _authToken = (getKeyFunc, token) => {
  * @param {function} cb - returns the new key
  * @returns {string|boolean} next encrypted token and session data fields
  */
-const rollToken = (getKeyFunc, token, newfields, cb) => {
-    const auth = _authToken(getKeyFunc, token);
+const rollToken = async (getKeyFunc, token, newfields, cb) => {
+    const auth = await _authToken(getKeyFunc, token);
     if (!auth) return false;
 
     const { keyId, serverKey } = auth;

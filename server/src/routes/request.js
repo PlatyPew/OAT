@@ -17,9 +17,8 @@ const router = express.Router();
  * Generate and send Base64 encoded and encrypted RNG to client
  * Store next token in database
  * 
- * @req.header {string} "OAK" - One-time API key/token
- * @req.header {string} "OAK Signature" - Digital Signature of OAK
- * @res.send {bool, string, object} - Boolean value to indicate result, Base64 encoded and encrypted RNG, metadata
+ * @req.header {string} OAK - One-time API key/token
+ * @res.send {boolean, boolean|string} - Boolean value to indicate result, Base64 encoded and encrypted RNG, metadata
  */
 router.get("/", async(req, res) => {
     res.setHeader("Content-Type", "application/json");

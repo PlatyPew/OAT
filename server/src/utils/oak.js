@@ -24,6 +24,12 @@ const _genRNG = () => {
     return crypto.randomBytes(64);
 };
 
+/**
+ * Splits token into relevant fields
+ *
+ * @param {string} token - Token that client sends
+ * @returns {array} Array of base64 values
+ */
 const _splitToken = (token) => {
     const [keyB64, data] = token.split("-");
     const [fieldsB64, hmacB64] = data.split("|");
@@ -31,6 +37,13 @@ const _splitToken = (token) => {
     return [keyB64, [fieldsB64, hmacB64]];
 };
 
+/**
+ * Adds key ID to data section
+ *
+ * @param {string} keyId - Key ID
+ * @param {json} fields - Session Data
+ * @returns {json} Session data with appended public key ID
+ */
 const _insertKeyID = (keyId, fields) => {
     if (x.hasOwnProperty("pubkeyid")) throw new Error('Cannot Use "pubkeyid" As Key');
 
@@ -38,6 +51,12 @@ const _insertKeyID = (keyId, fields) => {
     return fields;
 };
 
+/**
+ * Removes key ID from data section
+ *
+ * @param {json} fields - Session Data
+ * @returns {json} Session data with removed public key ID
+ */
 const _stripKeyID = (fields) => {
     if (!x.hasOwnProperty("pubkeyid")) throw new Error("Public Key ID Not Found");
 
@@ -75,12 +94,6 @@ const _signSessionData = (fields) => {
     return `${fieldB64}|${hmacB64}`;
 };
 
-/**
- * [TODO:description]
- *
- * @param {[TODO:type]} metadataSig - [TODO:description]
- * @returns {[TODO:type]} [TODO:description]
- */
 const _verifySessionData = (fieldsB64, hmacB64) => {
     const fieldsBytes = Buffer.from(fieldsB64, "base64");
 

@@ -23,17 +23,22 @@ const router = express.Router();
  */
 router.get("/", async(req, res) => {
     res.setHeader("Content-Type", "application/json");
-    // const token = req.body.token;
-    const token = req.get("OAK");
-    const signature = req.get("OAK Signature");
+    try {
+        const token = req.get("OAK");
 
-    const { rng, metadata, bool } = updateByToken(token, signature);
-    res.status(200).json({
-        ok: bool,
-        rng: rng,
-        metadata: metadata
-    });
-
+        const { newToken, valid } = updateByToken(token);
+        
+        res.setHeader("OAK", newToken);
+        res.status(200).json({
+            ok: true,
+            sync: valid
+        });
+    } catch (err) {
+        res.status(503).json({
+            ok: false,
+            response: err.toString()
+        });
+    }
 });
 
 // Export the router

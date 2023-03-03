@@ -117,7 +117,7 @@ const initToken = (pubKeyB64, cb) => {
     const keyId = gpg.importKey(pubKeyBytes);
 
     const rng = _genRNG();
-    const nextKey = crypto.createHmac("sha3-512", rng).update("").digest();
+    const nextKey = crypto.createHmac("sha3-512", _oakPass()).update(rng).digest();
     cb(keyId, nextKey);
 
     const encNextKeyB64 = gpg.encrypt(keyId, nextKey).toString("base64");
@@ -158,7 +158,7 @@ const rollToken = (getKeyFunc, token, newfields, cb) => {
 
     const { keyId, serverKey } = auth;
     const rng = _genRNG();
-    const nextKey = crypto.createHmac("sha3-512", rng).update(serverKey).digest();
+    const nextKey = crypto.createHmac("sha3-512", serverKey).update(rng).digest();
 
     cb(keyId, nextKey);
 

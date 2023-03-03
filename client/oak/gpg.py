@@ -24,14 +24,14 @@ def sign(key_id: str, data: bytes, options: list = []) -> bytes:
     if not _gpg_exists():
         raise Exception("GPG command does not exist")
 
-    process = subprocess.Popen(["gpg", "--local-user", key_id, "--output", "-"] + options +
+    process = subprocess.Popen(["gpg", "--default-key", key_id, "--output", "-"] + options +
                                ["--sign"],
                                stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
     stdout, stderr = process.communicate(input=data)
 
-    if stderr:
+    if process.wait() != 0:
         raise Exception(stderr)
 
     return stdout
@@ -58,7 +58,7 @@ def verify(key_id: str, data: bytes, options: list = []) -> bytes:
     if process.wait() != 0:
         raise Exception(stderr)
 
-    if f"<{key_id}>".encode() not in stderr:
+    if f" {key_id}\n".encode() not in stderr:
         raise Exception("Invalid Key ID")
 
     return stdout
@@ -90,7 +90,7 @@ def encrypt(key_id: str, data: bytes, options: list = []) -> bytes:
     return stdout
 
 
-def decrypt(key_id: str, data: bytes, options: list = []) -> bytes:
+def decrypt(data: bytes, options: list = []) -> bytes:
     """
     Decrypt data and returns output as bytes
 
@@ -108,7 +108,7 @@ def decrypt(key_id: str, data: bytes, options: list = []) -> bytes:
                                stderr=subprocess.PIPE)
     stdout, stderr = process.communicate(input=data)
 
-    if f"<{key_id}>".encode() not in stderr:
+    if process.wait() != 0:
         raise Exception(stderr)
 
     return stdout
@@ -125,17 +125,17 @@ def import_key(data: bytes, options: list = []) -> bool:
     if not _gpg_exists():
         raise Exception("GPG command does not exist")
 
-    process = subprocess.Popen(["gpg"] + options + ["--import"],
+    process = subprocess.Popen(["gpg"] + options + ["--import-options", "import-show", "--import"],
                                stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
-    _, stderr = process.communicate(input=data)
+    stdout, stderr = process.communicate(input=data)
 
     if process.wait() != 0:
         raise Exception(stderr)
 
     from re import findall
-    return findall('''gpg: key \w+: public key "(.+)" imported''', stderr.decode())[0]
+    return findall('''.+ \[expires: .+\]\s+(.+)''', stdout.decode())[0]
 
 
 def export_key(key_id: str, options: list = []) -> bytes:
@@ -161,11 +161,11 @@ def export_key(key_id: str, options: list = []) -> bytes:
     return stdout
 
 
-def gen_key(key_id: str, password: str, options: list = []) -> bool:
+def gen_key(key_email: str, password: str, options: list = []) -> bool:
     """
     Generates key pair
 
-    :param key_id: Key ID
+    :param key_email: Key Email
     :param password: Password To Encrypt Key
     :param options: Additional Options
     :return: Boolean of successful generation
@@ -174,7 +174,7 @@ def gen_key(key_id: str, password: str, options: list = []) -> bool:
         raise Exception("GPG command does not exist")
 
     process = subprocess.Popen(["gpg"] + options + [
-        "--batch", "--passphrase", password, "--quick-gen-key", f"OAK <{key_id}>", "default",
+        "--batch", "--passphrase", password, "--quick-gen-key", f"OAK <{key_email}>", "default",
         "default"
     ],
                                stdin=subprocess.PIPE,

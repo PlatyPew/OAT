@@ -20,13 +20,14 @@ const router = express.Router();
  * Authenticate email:password
  * 
  * update.updateByAccount():
- * Generate and send Base64 encoded and encrypted RNG to client
- * Store next token in database
+ * Verify account 
+ * Call oak.js initToken()
  * 
  * @req.body {string} email - Account email 
  * @req.body {string} password - Account password 
  * @req.body {string} publickey - Client GPG public key
- * @res.send {bool, string, object} - Boolean value to indicate result, Base64 encoded and encrypted RNG, metadata
+ * @res.header {string} OAK - Base64 encoded API token
+ * @res.send {boolean, <string>} - Boolean value to indicate result, error message if error occurred
  */
 router.post("/", async(req, res) => {
     res.setHeader("Content-Type", "application/json");

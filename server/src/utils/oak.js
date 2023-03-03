@@ -2,9 +2,9 @@ const crypto = require("crypto");
 const gpg = require("./gpg");
 
 /**
- * Gets oak password from environment variable
+ * gets oak password from environment variable
  *
- * @returns {string} Oak password to use
+ * @returns {string} oak password to use
  */
 const _oakPass = () => {
     const oakPass = process.env.OAK_PASS;
@@ -16,19 +16,19 @@ const _oakPass = () => {
 };
 
 /**
- * Generates random 64-bits
+ * generates random 512-bits
  *
- * @returns {bytes} random bytes
+ * @returns {bytes} 64 random bytes
  */
 const _genRNG = () => {
     return crypto.randomBytes(64);
 };
 
 /**
- * Splits token into relevant fields
+ * splits token into relevant fields
  *
- * @param {string} token - Token that client sends
- * @returns {array} Array of base64 values
+ * @param {string} token - token that client sends
+ * @returns {json} object of signedKey, fields and hmac
  */
 const _splitToken = (token) => {
     const [signedKeyB64, data] = token.split("-");
@@ -42,11 +42,11 @@ const _splitToken = (token) => {
 };
 
 /**
- * Adds key ID to data section
+ * adds key id to data section
  *
- * @param {string} keyId - Key ID
- * @param {json} fields - Session Data
- * @returns {json} Session data with appended public key ID
+ * @param {string} keyId - public key id
+ * @param {json} fields - session data fields
+ * @returns {json} session data fields with appended public key ID
  */
 const _insertKeyID = (keyId, fields) => {
     if (fields.hasOwnProperty("pubkeyid")) throw new Error('Cannot Use "pubkeyid" As Key');
@@ -56,10 +56,10 @@ const _insertKeyID = (keyId, fields) => {
 };
 
 /**
- * Removes key ID from data section
+ * removes key ID from data section
  *
- * @param {json} fields - Session Data
- * @returns {json} Session data with removed public key ID
+ * @param {json} fields - session data fields
+ * @returns {json} session data fields with removed public key ID
  */
 const _stripKeyID = (fields) => {
     if (!fields.hasOwnProperty("pubkeyid")) throw new Error("Public Key ID Not Found");
@@ -69,10 +69,10 @@ const _stripKeyID = (fields) => {
 };
 
 /**
- * Returns the data fields as JSON
+ * get session data from token
  *
- * @param {string} metadataSig - Metadata Signature
- * @returns {json} JSON data
+ * @param {string} token - token that is sent from the client
+ * @returns {json} session data extracted from the token
  */
 const getSessionData = (token) => {
     const { fields, hmac } = _splitToken(token);
@@ -83,10 +83,10 @@ const getSessionData = (token) => {
 };
 
 /**
- * Generates hash based on metadata
+ * performs hmac on session data fields to prevent tampering
  *
- * @param {json} metadata - JSON data
- * @returns {string} signed metadata
+ * @param {json} fields - session data to perform hmac
+ * @returns {string} concatenated json data and hmac in base64
  */
 const _signSessionData = (fields) => {
     const fieldBytes = Buffer.from(JSON.stringify(fields));
@@ -98,6 +98,13 @@ const _signSessionData = (fields) => {
     return `${fieldB64}|${hmacB64}`;
 };
 
+/**
+ * ensures session data fields have not been tampered
+ *
+ * @param {json} fields - session data fields
+ * @param {bytes} hmac - hmac on session data
+ * @returns {boolean} check if session data fields has been tampered
+ */
 const _verifySessionData = (fields, hmac) => {
     const fieldBytes = Buffer.from(JSON.stringify(fields));
 
@@ -107,10 +114,11 @@ const _verifySessionData = (fields, hmac) => {
 };
 
 /**
- * Initialise the OAK process
+ * initialise the initial oak key
  *
- * @param {string} pubKey - Public Key Of Client In Base64
- * @returns {string, string, string, object} Key ID, base64 encoded and encrypted RNG, next token, metadata
+ * @param {string} pubKeyB64 - public key in base64
+ * @param {function} cb - callback that returns key id and the next key
+ * @returns {string} token to send back to client
  */
 const initToken = (pubKeyB64, cb) => {
     const pubKeyBytes = Buffer.from(pubKeyB64, "base64");
@@ -128,6 +136,13 @@ const initToken = (pubKeyB64, cb) => {
     return `${encNextKeyB64}-${data}`;
 };
 
+/**
+ * authenticate the token
+ *
+ * @param {function} getKeyFunc - function to fetch the key from the server
+ * @param {string} token - token sent from the client
+ * @returns {json} key id and current key
+ */
 const _authToken = (getKeyFunc, token) => {
     const { signedKey, fields, hmac } = _splitToken(token);
 
@@ -145,12 +160,13 @@ const _authToken = (getKeyFunc, token) => {
 };
 
 /**
- * Roll the next key
+ * roll the next key
  *
- * @param {string} keyId - Key To Encrypt With
- * @param {string} currToken - Current Token Used
- * @param {string} signature - Client Signature of token
- * @returns {string, string, boolean, object} Encrypted RNG value, next token, metadata
+ * @param {function} getKeyFunc - function to fetch the key from the server
+ * @param {string} token - tokent sent from the client
+ * @param {json} newfields - new session data fields to update
+ * @param {function} cb - returns the new key
+ * @returns {string|boolean} next encrypted token and session data fields
  */
 const rollToken = (getKeyFunc, token, newfields, cb) => {
     const auth = _authToken(getKeyFunc, token);

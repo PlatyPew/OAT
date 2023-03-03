@@ -24,8 +24,7 @@ router.get("/", async(req, res) => {
     res.setHeader("Content-Type", "application/json");
     try {
         const token = req.get("OAK");
-
-        const { newToken, valid } = updateByToken(token);
+        const { newToken, valid } = await updateByToken(token,{});
         
         res.setHeader("OAK", newToken);
         res.status(200).json({

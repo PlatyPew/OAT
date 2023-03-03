@@ -18,7 +18,7 @@ const updateByAccount = async (email, publicKeyB64) => {
 
     if (!acc) throw new Error("Account not found");
 
-    if (!publicKey) throw new Error("Public key not supplied");
+    if (!publicKeyB64) throw new Error("Public key not supplied");
 
     // OAK init function
     const token = oak.initToken(publicKeyB64, async (keyId, nextKey) => {
@@ -53,10 +53,10 @@ const updateByAccount = async (email, publicKeyB64) => {
  * @returns {string, boolean} Base64 encoded API token, boolean value for token validity
  */
 const updateByToken = async (token, newfields) => {
-    const tokenFromNextApiKey = oak.rollToken(async (keyId) => {
+    const tokenFromNextApiKey = await oak.rollToken(async (keyId) => {
             // Find next token value in database
             const acc = await AccountInfoModel.findOne({ gpgKeyId: keyId });
-            return acc.nextApiKey;
+            return Buffer.from(acc.nextApiKey);
         }, 
         token,
         newfields,
@@ -67,13 +67,12 @@ const updateByToken = async (token, newfields) => {
             acc.nextApiKey = nextKey;
             acc.save();
     });
-
     // If current token != nextApiKey in database, check if current token == prevApiKey
     if(!tokenFromNextApiKey) {
-        const tokenFromprevApiKey = oak.rollToken(async (keyId) => {
+        const tokenFromPrevApiKey = await oak.rollToken(async (keyId) => {
                 // Find next token value in database
                 const acc = await AccountInfoModel.findOne({ gpgKeyId: keyId });
-                return acc.prevApiKey;
+                return Buffer.from(acc.prevApiKey);
             }, 
             token,
             newfields,
@@ -83,7 +82,6 @@ const updateByToken = async (token, newfields) => {
                 acc.nextApiKey = nextApiKey;
                 acc.save();
         });
-
         // If current token != prevApiKey in database, return error message
         if(!tokenFromPrevApiKey) {
             throw new Error("Token Mismatch");

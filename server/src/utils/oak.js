@@ -34,7 +34,11 @@ const _splitToken = (token) => {
     const [keyB64, data] = token.split("-");
     const [fieldsB64, hmacB64] = data.split("|");
 
-    return [keyB64, [fieldsB64, hmacB64]];
+    const key = Buffer.from(keyB64, "base64");
+    const fields = JSON.parse(Buffer.from(fieldsB64, "base64"));
+    const hmac = Buffer.from(hmacB64, "base64");
+
+    return { key, fields, hmac };
 };
 
 /**
@@ -45,7 +49,7 @@ const _splitToken = (token) => {
  * @returns {json} Session data with appended public key ID
  */
 const _insertKeyID = (keyId, fields) => {
-    if (x.hasOwnProperty("pubkeyid")) throw new Error('Cannot Use "pubkeyid" As Key');
+    if (fields.hasOwnProperty("pubkeyid")) throw new Error('Cannot Use "pubkeyid" As Key');
 
     fields.pubkeyid = keyId;
     return fields;
@@ -58,7 +62,7 @@ const _insertKeyID = (keyId, fields) => {
  * @returns {json} Session data with removed public key ID
  */
 const _stripKeyID = (fields) => {
-    if (!x.hasOwnProperty("pubkeyid")) throw new Error("Public Key ID Not Found");
+    if (!fields.hasOwnProperty("pubkeyid")) throw new Error("Public Key ID Not Found");
 
     delete fields.pubkeyid;
     return fields;
@@ -71,11 +75,11 @@ const _stripKeyID = (fields) => {
  * @returns {json} JSON data
  */
 const extractSessionData = (token) => {
-    const [fieldsB64, hmacB64] = _splitToken(token)[1];
+    const { fields, hmac } = _splitToken(token);
 
-    if (!_verifySessionData(fieldsB64, hmacB64)) throw new Error("Data Has Been Tampered");
+    if (!_verifySessionData(fields, hmac)) throw new Error("Data Has Been Tampered");
 
-    return _stripKeyID(fieldsB64);
+    return _stripKeyID(fields);
 };
 
 /**
@@ -94,12 +98,10 @@ const _signSessionData = (fields) => {
     return `${fieldB64}|${hmacB64}`;
 };
 
-const _verifySessionData = (fieldsB64, hmacB64) => {
-    const fieldsBytes = Buffer.from(fieldsB64, "base64");
+const _verifySessionData = (fields, hmac) => {
+    const calculatedHmac = crypto.createHmac("sha3-512", _oakPass()).update(fields).digest();
 
-    return (
-        crypto.createHmac("sha3-512", _oakPass()).update(fieldsBytes).digest("base64") === hmacB64
-    );
+    return Buffer.compare(calculatedHmac, hmac) === 0;
 };
 
 /**
@@ -108,19 +110,20 @@ const _verifySessionData = (fieldsB64, hmacB64) => {
  * @param {string} pubKey - Public Key Of Client In Base64
  * @returns {string, string, string, object} Key ID, base64 encoded and encrypted RNG, next token, metadata
  */
-const initToken = (pubKey) => {
-    const pubKeyBytes = Buffer.from(pubKey, "base64");
+const initToken = (pubKeyB64, cb) => {
+    const pubKeyBytes = Buffer.from(pubKeyB64, "base64");
+    const keyId = gpg.importKey(pubKeyBytes);
 
     const rng = _genRNG();
-    const nextToken = crypto.createHash("sha3-512").update(rng).digest("base64");
+    const nextKey = crypto.createHmac("sha3-512", "").update(rng).digest();
+    cb(nextKey);
 
-    const keyId = gpg.importKey(pubKeyBytes);
-    const encryptedRNG = gpg.encrypt(keyId, rng).toString("base64");
+    const encNextKeyB64 = gpg.encrypt(keyId, nextKey).toString("base64");
 
-    // TODO: Generate secret
-    const metadata = undefined;
+    const fields = _insertKeyID(keyId, {});
+    const data = _signSessionData(fields);
 
-    return { gpgUid: keyId, encryptedRNG, nextToken, metadata };
+    return `${encNextKeyB64}-${data}`;
 };
 
 /**

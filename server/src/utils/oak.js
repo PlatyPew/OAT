@@ -117,7 +117,7 @@ const initToken = (pubKeyB64, cb) => {
     const keyId = gpg.importKey(pubKeyBytes);
 
     const rng = _genRNG();
-    const nextKey = crypto.createHmac("sha3-512", "").update(rng).digest();
+    const nextKey = crypto.createHmac("sha3-512", rng).update("").digest();
     cb(keyId, nextKey);
 
     const encNextKeyB64 = gpg.encrypt(keyId, nextKey).toString("base64");
@@ -128,7 +128,7 @@ const initToken = (pubKeyB64, cb) => {
     return `${encNextKeyB64}-${data}`;
 };
 
-const authToken = (getKeyFunc, token) => {
+const _authToken = (getKeyFunc, token) => {
     const { signedKey, fields, hmac } = _splitToken(token);
 
     if (!_verifySessionData(fields, hmac)) throw new Error("Data Has Been Tampered");
@@ -139,7 +139,9 @@ const authToken = (getKeyFunc, token) => {
 
     const serverKey = getKeyFunc(keyId);
 
-    return Buffer.compare(clientKey, serverKey) === 0;
+    if (Buffer.compare(clientKey, serverKey) !== 0) return false;
+
+    return { keyId, serverKey };
 };
 
 /**
@@ -150,11 +152,26 @@ const authToken = (getKeyFunc, token) => {
  * @param {string} signature - Client Signature of token
  * @returns {string, string, boolean, object} Encrypted RNG value, next token, metadata
  */
-const rollToken = (token, newfields, cb) => {};
+const rollToken = (getKeyFunc, token, newfields, cb) => {
+    const auth = _authToken(getKeyFunc, token);
+    if (!auth) return false;
+
+    const { keyId, serverKey } = auth;
+    const rng = _genRNG();
+    const nextKey = crypto.createHmac("sha3-512", rng).update(serverKey).digest();
+
+    cb(keyId, nextKey);
+
+    const encNextKeyB64 = gpg.encrypt(keyId, nextKey).toString("base64");
+
+    const fields = _insertKeyID(keyId, newfields);
+    const data = _signSessionData(fields);
+
+    return `${encNextKeyB64}-${data}`;
+};
 
 module.exports = {
     initToken: initToken,
     rollToken: rollToken,
-    authToken: authToken,
     getSessionData: getSessionData,
 };

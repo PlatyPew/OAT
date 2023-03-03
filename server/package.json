@@ -2,7 +2,7 @@
   "name": "oak",
   "version": "1.0.0",
   "description": "PoC rolling API key",
-  "main": "app.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -15,5 +15,12 @@
   "bugs": {
     "url": "https://github.com/PlatyPew/OAK/issues"
   },
-  "homepage": "https://github.com/PlatyPew/OAK#readme"
+  "homepage": "https://github.com/PlatyPew/OAK#readme",
+  "dependencies": {
+    "command-exists": "^1.2.9",
+    "express": "^4.18.2",
+    "fs": "^0.0.1-security",
+    "gpg": "^0.6.0",
+    "mongoose": "^6.10.0"
+  }
 }

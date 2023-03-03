@@ -11,70 +11,89 @@ const gpg = require('./gpg');
  * 
  * @param {string} email - Account email 
  * @param {string} publickey - Client Public Key 
- * @returns {string, object} Base64 encoded and encrypted RNG, metadata
+ * @returns {string|boolean} Base64 encoded API token
  */
-const updateByAccount = async (email, publicKey) => {
+const updateByAccount = async (email, publicKeyB64) => {
     const acc = await AccountInfoModel.findOne({ email: email });
 
-    if (!acc) return false;
+    if (!acc) throw new Error("Account not found");
 
-    if (!publicKey) return false;
+    if (!publicKey) throw new Error("Public key not supplied");
+
     // OAK init function
-    const { gpgUid, encryptedRNG, nextToken, metadata } = oak.initToken(publicKey);
-    // Store token in both prevtoken and nextToken
-    acc.prevToken = nextToken;
-    acc.nextToken = nextToken;
-    acc.gpgUid = gpgUid;
-    acc.save();
+    const token = oak.initToken(publicKeyB64, async (keyId, nextKey) => {
+        // Store token in both prevApiKey and nextApiKey
+        acc.prevApiKey = nextKey;
+        acc.nextApiKey = nextKey;
+        acc.gpgKeyId = keyId;
+        acc.save();
+    });
 
-    console.log(nextToken.toString('hex'));
-
-    return { encryptedRNG, metadata };
+    return token;
 };
 
 /**
- * Verify token via client GPG signature
- * Generate new token for client to use 
- * Update nextToken in MongoDB database 
- * Replace prevToken if token supplied by client is valid; Validity is based on if the token supplied is the next token or 
+ * Perform OAK rollToken matching MongoDB Document's nextApiKey
+ * @param {function} - Function to fetch the nextApiKey from MongoDB using GPG Public Key ID
+ * @param {string} token - Token supplied by client in HTTP Request Header
+ * @param {object} - Metadata new fields
+ * @param {function} - Function to replace prevApiKey with current API Key and nextApiKey with new API Key
  * 
- * @param {string} token - Token supplied by client
- * @param {string} signature - GPG Signature supplied by client to be verified (Base64 encoded)
- * @returns {string, object, boolean} Base64 encoded and encrypted RNG, metadata, boolean value for token
+ * If rollToken-nextApiKey fails,
+ * Perform OAK rollToken matching MongoDB Document's prevApiKey
+ * @param {function} - Function to fetch the prevApiKey from MongoDB using GPG Public Key ID
+ * @param {string} token - Token supplied by client in HTTP Request Header
+ * @param {object} - Metadata new fields
+ * @param {function} - Function to replace nextApiKey with new API Key
+ * 
+ * If rollToken-prevApiKey fails, throw Error with message.
+ * 
+ * @param {string} token - Token supplied by client in HTTP Request Header
+ * @param {json} newfields - new session data fields to update
+ * @returns {string, boolean} Base64 encoded API token, boolean value for token validity
  */
-const updateByToken = async (token, signature) => {
-    const acc = await AccountInfoModel.findOne({ $or: [
-        { prevToken: token },
-        { nextToken: token }
-    ]});
+const updateByToken = async (token, newfields) => {
+    const tokenFromNextApiKey = oak.rollToken(async (keyId) => {
+            // Find next token value in database
+            const acc = await AccountInfoModel.findOne({ gpgKeyId: keyId });
+            return acc.nextApiKey;
+        }, 
+        token,
+        newfields,
+        async (keyId, nextKey) => {
+            const acc = await AccountInfoModel.findOne({ gpgKeyId: keyId });
+            // Store current token in both prevApiKey and nextApiKey
+            acc.prevApiKey = acc.nextApiKey;
+            acc.nextApiKey = nextKey;
+            acc.save();
+    });
 
-    if (acc.nextToken === token) { // Documents with token as nextToken exist.
-        const { encryptedRNG, nextToken, metadata } = oak.rollToken(acc.gpgUid, token, signature);
-        const newTokenBoolean = true;
+    // If current token != nextApiKey in database, check if current token == prevApiKey
+    if(!tokenFromNextApiKey) {
+        const tokenFromprevApiKey = oak.rollToken(async (keyId) => {
+                // Find next token value in database
+                const acc = await AccountInfoModel.findOne({ gpgKeyId: keyId });
+                return acc.prevApiKey;
+            }, 
+            token,
+            newfields,
+            async (keyId, nextApiKey) => {
+                const acc = await AccountInfoModel.findOne({ gpgKeyId: keyId });
+                // Store next token in nextApiKey
+                acc.nextApiKey = nextApiKey;
+                acc.save();
+        });
 
-        acc.prevToken = token;
-        acc.nextToken = nextToken;
-        acc.save();
-
-        console.log(nextToken.toString('hex'));
-
-        return { encryptedRNG, metadata, bool: newTokenBoolean };
-    } 
-    else if (acc.prevToken === token) { // Documents with token only as prevToken exist.
-        const { encryptedRNG, nextToken, metadata } = oak.rollToken(acc.gpgUid, token, signature);
-        const newTokenBoolean = false;
-
-        acc.nextToken = nextToken;
-        acc.save();
-
-        console.log(nextToken.toString('hex'));
-
-        return { encryptedRNG, metadata, newTokenBoolean };
-    } 
-    else { // No documents with token as prevToken/nextToken exist.
-        const encryptedRNG = undefined, metadata = undefined;
-        const newTokenBoolean = false;
-        return { encryptedRNG, metadata, newTokenBoolean };
+        // If current token != prevApiKey in database, return error message
+        if(!tokenFromPrevApiKey) {
+            throw new Error("Token Mismatch");
+        }
+        else {
+            return { newToken:tokenFromPrevApiKey, valid:false };
+        }
+    }
+    else {
+        return { newToken:tokenFromNextApiKey, valid:true };
     }
 };
 

@@ -38,28 +38,20 @@ router.post("/", async(req, res) => {
     
     const publickey = fs.readFileSync('./src/routes/key.asc'); // Temp solution
 
-    const valid = verifyCredentials(email, password);
-    if (valid) {
-        try {
+    try {
+        verifyCredentials(email, password);
 
-            const {encryptedRNG, metadata} = updateByAccount(email, publickey);
-            
-            res.status(200).json({
-                ok: true,
-                rng: encryptedRNG,
-                metadata: metadata
-            });
-        } catch (err) {
-            res.status(503).json({
-                ok: false,
-                response: err.toString()
-            });
-        }
+        const token = await updateByAccount(email, publicKeyB64);
+        
+        res.setHeader("OAK", token);
+        res.status(200).json({
+            ok: true
+        });
     }
-    else {
+    catch (err) {
         res.status(503).json({
             ok: false,
-            response: "Not authorized."
+            response: err.toString()
         });
     }
     

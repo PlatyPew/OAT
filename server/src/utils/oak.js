@@ -24,16 +24,39 @@ const _genRNG = () => {
     return crypto.randomBytes(64);
 };
 
+const _splitToken = (token) => {
+    const [keyB64, data] = token.split("-");
+    const [fieldsB64, hmacB64] = data.split("|");
+
+    return [keyB64, [fieldsB64, hmacB64]];
+};
+
+const _insertKeyID = (keyId, fields) => {
+    if (x.hasOwnProperty("pubkeyid")) throw new Error('Cannot Use "pubkeyid" As Key');
+
+    fields.pubkeyid = keyId;
+    return fields;
+};
+
+const _stripKeyID = (fields) => {
+    if (!x.hasOwnProperty("pubkeyid")) throw new Error("Public Key ID Not Found");
+
+    delete fields.pubkeyid;
+    return fields;
+};
+
 /**
  * Returns the data fields as JSON
  *
  * @param {string} metadataSig - Metadata Signature
  * @returns {json} JSON data
  */
-const getDataFields = (metadataSig) => {
-    const [metadataB64, _] = metadataSig.split("|");
-    const metadataBytes = Buffer.from(metadataB64, "base64");
-    return JSON.parse(metadataBytes);
+const extractSessionData = (token) => {
+    const [fieldsB64, hmacB64] = _splitToken(token)[1];
+
+    if (!_verifySessionData(fieldsB64, hmacB64)) throw new Error("Data Has Been Tampered");
+
+    return _stripKeyID(fieldsB64);
 };
 
 /**
@@ -42,17 +65,14 @@ const getDataFields = (metadataSig) => {
  * @param {json} metadata - JSON data
  * @returns {string} signed metadata
  */
-const signMetadata = (metadata) => {
-    const metadataBytes = Buffer.from(JSON.stringify(metadata));
+const _signSessionData = (fields) => {
+    const fieldBytes = Buffer.from(JSON.stringify(fields));
 
-    const metadataHmac = crypto
-        .createHmac("sha3-512", _oakPass())
-        .update(metadataBytes)
-        .digest("base64");
+    const hmacB64 = crypto.createHmac("sha3-512", _oakPass()).update(fieldBytes).digest("base64");
 
-    const metadataB64 = metadataBytes.toString("base64");
+    const fieldB64 = fieldBytes.toString("base64");
 
-    return `${metadataB64}|${metadataHmac}`;
+    return `${fieldB64}|${hmacB64}`;
 };
 
 /**
@@ -61,14 +81,12 @@ const signMetadata = (metadata) => {
  * @param {[TODO:type]} metadataSig - [TODO:description]
  * @returns {[TODO:type]} [TODO:description]
  */
-const verifyMetadata = (metadataSig) => {
-    const [metadataB64, metadataHmac] = metadataSig.split("|");
+const _verifySessionData = (fieldsB64, hmacB64) => {
+    const fieldsBytes = Buffer.from(fieldsB64, "base64");
 
-    const metadataBytes = Buffer.from(metadataB64, "base64");
-
-    const hmac = crypto.createHmac("sha3-512", _oakPass()).update(metadataBytes).digest("base64");
-
-    return metadataHmac === hmac;
+    return (
+        crypto.createHmac("sha3-512", _oakPass()).update(fieldsBytes).digest("base64") === hmacB64
+    );
 };
 
 /**
@@ -124,7 +142,5 @@ const rollToken = (keyId, currToken, signature) => {
 module.exports = {
     initToken: initToken,
     rollToken: rollToken,
-    getDataFields: getDataFields,
-    signMetadata: signMetadata,
-    verifyMetadata: verifyMetadata,
+    extractSessionData: extractSessionData,
 };

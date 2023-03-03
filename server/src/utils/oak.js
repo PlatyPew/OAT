@@ -29,7 +29,7 @@ const getDataFields = (metadataSig) => {
     const [metadataB64, _] = metadataSig.split("|");
     const metadataBytes = Buffer.from(metadataB64, "base64");
     return JSON.parse(metadataBytes);
-}
+};
 
 /**
  * Generates hash based on metadata
@@ -41,7 +41,7 @@ const signMetadata = (metadata) => {
     const metadataBytes = Buffer.from(JSON.stringify(metadata));
 
     const metadataHmac = crypto
-        .createHmac("sha3-256", _oakPass())
+        .createHmac("sha3-512", _oakPass())
         .update(metadataBytes)
         .digest("base64");
 
@@ -55,7 +55,7 @@ const verifyMetadata = (metadataSig) => {
 
     const metadataBytes = Buffer.from(metadataB64, "base64");
 
-    const hmac = crypto.createHmac("sha3-256", _oakPass()).update(metadataBytes).digest("base64");
+    const hmac = crypto.createHmac("sha3-512", _oakPass()).update(metadataBytes).digest("base64");
 
     return metadataHmac === hmac;
 };
@@ -66,11 +66,11 @@ const verifyMetadata = (metadataSig) => {
  * @param {string} pubKey - Public Key Of Client In Base64
  * @returns {string, string, string, object} Key ID, base64 encoded and encrypted RNG, next token, metadata
  */
-const initKey = (pubKey) => {
+const initToken = (pubKey) => {
     const pubKeyBytes = Buffer.from(pubKey, "base64");
 
     const rng = _genRNG();
-    const nextToken = crypto.createHash("sha512").update(rng).digest("base64");
+    const nextToken = crypto.createHash("sha3-512").update(rng).digest("base64");
 
     const keyId = gpg.importKey(pubKeyBytes);
     const encryptedRNG = gpg.encrypt(keyId, rng).toString("base64");
@@ -98,7 +98,7 @@ const rollToken = (keyId, currToken, signature) => {
     const rng = _genRNG();
 
     const nextToken = crypto
-        .createHash("sha512")
+        .createHash("sha3-512")
         .update(Buffer.concat([currTokenBytes, rng]))
         .digest("base64");
 
@@ -111,7 +111,7 @@ const rollToken = (keyId, currToken, signature) => {
 };
 
 module.exports = {
-    initKey: initKey,
+    initToken: initToken,
     rollToken: rollToken,
     getDataFields: getDataFields,
     signMetadata: signMetadata,

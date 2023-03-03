@@ -15,6 +15,11 @@ const _oakPass = () => {
     return oakPass;
 };
 
+/**
+ * Generates random 64-bits
+ *
+ * @returns {bytes} random bytes
+ */
 const _genRNG = () => {
     return crypto.randomBytes(64);
 };
@@ -50,6 +55,12 @@ const signMetadata = (metadata) => {
     return `${metadataB64}|${metadataHmac}`;
 };
 
+/**
+ * [TODO:description]
+ *
+ * @param {[TODO:type]} metadataSig - [TODO:description]
+ * @returns {[TODO:type]} [TODO:description]
+ */
 const verifyMetadata = (metadataSig) => {
     const [metadataB64, metadataHmac] = metadataSig.split("|");
 

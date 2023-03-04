@@ -125,60 +125,62 @@ const initToken = (pubKeyB64, cb) => {
     const keyId = gpg.importKey(pubKeyBytes);
 
     const rng = _genRNG();
-    const nextKey = crypto.createHmac("sha3-512", _oakPass()).update(rng).digest();
-    cb(keyId, nextKey);
+    const nextApiKey = crypto.createHmac("sha3-512", _oakPass()).update(rng).digest();
+    cb(keyId, nextApiKey);
 
-    const encNextKeyB64 = gpg.encrypt(keyId, nextKey).toString("base64");
+    const encNextApiKeyB64 = gpg.encrypt(keyId, nextApiKey).toString("base64");
 
     const fields = _insertKeyID(keyId, {});
     const data = _signSessionData(fields);
 
-    return `${encNextKeyB64}-${data}`;
+    return `${encNextApiKeyB64}-${data}`;
 };
 
 /**
  * authenticate the token
  *
+ * @async
  * @param {function} getKeyFunc - function to fetch the key from the server
  * @param {string} token - token sent from the client
  * @returns {json} key id and current key
  */
-const _authToken = (getKeyFunc, token) => {
+const _authToken = async (getKeyFunc, token) => {
     const { signedKey, fields, hmac } = _splitToken(token);
 
     if (!_verifySessionData(fields, hmac)) throw new Error("Data Has Been Tampered");
 
     const keyId = fields.pubkeyid;
 
-    const clientKey = gpg.verify(keyId, signedKey);
+    const clientApiKey = gpg.verify(keyId, signedKey);
 
-    const serverKey = getKeyFunc(keyId);
+    const serverApiKey = await getKeyFunc(keyId);
 
-    if (Buffer.compare(clientKey, serverKey) !== 0) return false;
+    if (Buffer.compare(clientApiKey, serverApiKey) !== 0) return false;
 
-    return { keyId, serverKey };
+    return { keyId, serverKey: serverApiKey };
 };
 
 /**
  * roll the next key
  *
+ * @async
  * @param {function} getKeyFunc - function to fetch the key from the server
  * @param {string} token - tokent sent from the client
  * @param {json} newfields - new session data fields to update
  * @param {function} cb - returns the new key
  * @returns {string|boolean} next encrypted token and session data fields
  */
-const rollToken = (getKeyFunc, token, newfields, cb) => {
-    const auth = _authToken(getKeyFunc, token);
+const rollToken = async (getKeyFunc, token, newfields, cb) => {
+    const auth = await _authToken(getKeyFunc, token);
     if (!auth) return false;
 
     const { keyId, serverKey } = auth;
     const rng = _genRNG();
-    const nextKey = crypto.createHmac("sha3-512", serverKey).update(rng).digest();
+    const nextApiKey = crypto.createHmac("sha3-512", serverKey).update(rng).digest();
 
-    cb(keyId, nextKey);
+    cb(keyId, nextApiKey);
 
-    const encNextKeyB64 = gpg.encrypt(keyId, nextKey).toString("base64");
+    const encNextKeyB64 = gpg.encrypt(keyId, nextApiKey).toString("base64");
 
     const fields = _insertKeyID(keyId, newfields);
     const data = _signSessionData(fields);

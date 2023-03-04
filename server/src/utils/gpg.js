@@ -45,7 +45,8 @@ const verify = (keyId, data) => {
 
     if (gpg.status !== 0) throw new Error(gpg.stderr);
 
-    if (!gpg.stderr.includes(` ${keyId}\n`)) throw new Error("Invalid Key ID");
+    if (!gpg.stderr.includes(` ${keyId}\n`) || !gpg.stderr.includes(` ${keyId}\r`))
+        throw new Error("Invalid Key ID");
 
     return gpg.stdout;
 };

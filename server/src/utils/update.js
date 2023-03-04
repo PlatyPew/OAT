@@ -3,9 +3,6 @@ const { AccountInfoModel } = require("../models/AccountModel");
 // OAK Module
 const oak = require('./oak');
 
-// GPG Module
-const gpg = require('./gpg');
-
 /**
  * Insert values into client's account token and public key UID
  * 

@@ -19,8 +19,6 @@
   "dependencies": {
     "command-exists": "^1.2.9",
     "express": "^4.18.2",
-    "fs": "^0.0.1-security",
-    "gpg": "^0.6.0",
     "mongoose": "^6.10.0"
   }
 }

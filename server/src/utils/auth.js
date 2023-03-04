@@ -1,8 +1,5 @@
 const { AccountInfoModel } = require("../models/AccountModel");
 
-// GPG Module
-const gpg = require('./gpg');
-
 /**
  * Verify and authenticate account on MongoDB
  * 

@@ -1,9 +1,7 @@
 // Import dependencies
 const express = require("express");
-const mongoose = require("mongoose");
 
 // GPG + MongoDB Update Module
-// const gpg = require('../utils/gpg');
 const { updateByToken } = require("../utils/update");
 
 // Setup the express server router

@@ -66,32 +66,30 @@ const updateByToken = async (token, newfields) => {
             acc.save();
         }
     );
+
+    if (tokenFromNextApiKey) return { newToken: tokenFromNextApiKey, valid: true };
+
     // If current token != nextApiKey in database, check if current token == prevApiKey
-    if (!tokenFromNextApiKey) {
-        const tokenFromPrevApiKey = await oak.rollToken(
-            async (keyId) => {
-                // Find next token value in database
-                const acc = await AccountInfoModel.findOne({ gpgKeyId: keyId });
-                return Buffer.from(acc.prevApiKey);
-            },
-            token,
-            newfields,
-            async (keyId, nextApiKey) => {
-                const acc = await AccountInfoModel.findOne({ gpgKeyId: keyId });
-                // Store next token in nextApiKey
-                acc.nextApiKey = nextApiKey;
-                acc.save();
-            }
-        );
-        // If current token != prevApiKey in database, return error message
-        if (!tokenFromPrevApiKey) {
-            throw new Error("Token Mismatch");
-        } else {
-            return { newToken: tokenFromPrevApiKey, valid: false };
+    const tokenFromPrevApiKey = await oak.rollToken(
+        async (keyId) => {
+            // Find next token value in database
+            const acc = await AccountInfoModel.findOne({ gpgKeyId: keyId });
+            return Buffer.from(acc.prevApiKey);
+        },
+        token,
+        newfields,
+        async (keyId, nextApiKey) => {
+            const acc = await AccountInfoModel.findOne({ gpgKeyId: keyId });
+            // Store next token in nextApiKey
+            acc.nextApiKey = nextApiKey;
+            acc.save();
         }
-    } else {
-        return { newToken: tokenFromNextApiKey, valid: true };
-    }
+    );
+
+    // If current token != prevApiKey in database, return error message
+    if (!tokenFromPrevApiKey) throw new Error("Token Mismatch");
+
+    return { newToken: tokenFromPrevApiKey, valid: false };
 };
 
 module.exports = {

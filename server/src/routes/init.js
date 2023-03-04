@@ -34,18 +34,17 @@ router.post("/", async(req, res) => {
     const publicKeyB64 = req.body.publickey;
     
     try {
-        verifyCredentials(email, password);
+        if (!verifyCredentials(email, password)) {
+            res.status(401).json({ response: "Wrong email or password" });
+        }
 
         const token = await updateByAccount(email, publicKeyB64);
         
         res.setHeader("OAK", token);
-        res.status(200).json({
-            ok: true
-        });
+        res.status(200).json({response: {}});
     }
     catch (err) {
-        res.status(503).json({
-            ok: false,
+        res.status(500).json({
             response: err.toString()
         });
     }

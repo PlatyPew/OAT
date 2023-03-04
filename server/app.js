@@ -1,13 +1,22 @@
-// Import dependencies
-const express = require('express');
+// Import express
+const express = require("express");
+const app = express();
+
+// Imports for express
+const bodyParser = require("body-parser");
+const cors = require("cors");
 const mongoose = require("mongoose");
 
-// Setup the express server
-const app = express();
-const PORT = 8080;
+// Declare port
+const PORT = 3000;
 
-// Import middle ware into epress
-app.use(express.json({limit:"8mb"}));
+// URI for Mongodb
+const MONGO = "mongodb://localhost/oak";
+
+app.use(cors());
+
+app.use(bodyParser.urlencoded({ extended: false, limit: "8mb" }));
+app.use(bodyParser.json({ limit: "8mb" }));
 
 // User Credential Authentication + Generate IV
 const auth = require("./src/routes/init");
@@ -15,8 +24,6 @@ app.use("/api/init", auth);
 
 const request = require("./src/routes/request");
 app.use("/api/request", request);
-
-const MONGO = "mongodb://localhost:8000/oak"
 
 // Start Server
 console.log(`Waiting to connect to ${MONGO}`);

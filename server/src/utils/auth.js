@@ -10,9 +10,9 @@ const { AccountInfoModel } = require("../models/AccountModel");
 const verifyCredentials = async (email, password) => {
     const acc = await AccountInfoModel.findOne({ email: email });
 
-    if (!acc) throw new Error("Email and password incorrect");
+    if (!acc) return false;
 
-    if (acc.password !== password) throw new Error("Email and password incorrect");
+    if (acc.password !== password) return false;
 
     return true;
 };

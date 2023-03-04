@@ -117,10 +117,11 @@ const _verifySessionData = (fields, hmac) => {
  * initialise the initial oak key
  *
  * @param {string} pubKeyB64 - public key in base64
+ * @param {json} newfields - new session data fields to update
  * @param {function} cb - callback that returns key id and the next key
  * @returns {string} token to send back to client
  */
-const initToken = (pubKeyB64, cb) => {
+const initToken = (pubKeyB64, newFields, cb) => {
     const pubKeyBytes = Buffer.from(pubKeyB64, "base64");
     const keyId = gpg.importKey(pubKeyBytes);
 
@@ -130,7 +131,7 @@ const initToken = (pubKeyB64, cb) => {
 
     const encNextApiKeyB64 = gpg.encrypt(keyId, nextApiKey).toString("base64");
 
-    const fields = _insertKeyID(keyId, {});
+    const fields = _insertKeyID(keyId, newFields);
     const data = _signSessionData(fields);
 
     return `${encNextApiKeyB64}-${data}`;

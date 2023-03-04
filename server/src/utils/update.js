@@ -18,7 +18,7 @@ const updateByAccount = async (email, publicKeyB64) => {
     if (!publicKeyB64) throw new Error("Public key not supplied");
 
     // OAK init function
-    const token = oak.initToken(publicKeyB64, async (keyId, nextKey) => {
+    const token = oak.initToken(publicKeyB64, {}, async (keyId, nextKey) => {
         // Store token in both prevApiKey and nextApiKey
         acc.prevApiKey = nextKey;
         acc.nextApiKey = nextKey;

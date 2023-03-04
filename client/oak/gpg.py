@@ -58,7 +58,7 @@ def verify(key_id: str, data: bytes, options: list = []) -> bytes:
     if process.wait() != 0:
         raise Exception(stderr)
 
-    if f" {key_id}\n".encode() not in stderr:
+    if f" {key_id}\n".encode() not in stderr and f" {key_id}\r".encode() not in stderr:
         raise Exception("Invalid Key ID")
 
     return stdout

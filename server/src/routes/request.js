@@ -10,29 +10,29 @@ const router = express.Router();
 /**
  * <url>/api/request
  * Authenticate email:password
- * 
+ *
  * update.updateByToken():
  * Generate and send Base64 encoded and encrypted RNG to client
  * Store next token in database
- * 
+ *
  * @req.header {string} OAK - One-time API key/token
  * @res.send {boolean, boolean|string} - Boolean value to indicate result, Base64 encoded and encrypted RNG, metadata
  */
-router.get("/", async(req, res) => {
+router.get("/", async (req, res) => {
     res.setHeader("Content-Type", "application/json");
     try {
         const token = req.get("OAK");
-        const { newToken, valid } = await updateByToken(token,{});
-        
+        const { newToken, valid } = await updateByToken(token, {});
+
         res.setHeader("OAK", newToken);
         res.status(200).json({
             ok: true,
-            sync: valid
+            sync: valid,
         });
     } catch (err) {
         res.status(503).json({
             ok: false,
-            response: err.toString()
+            response: err.toString(),
         });
     }
 });

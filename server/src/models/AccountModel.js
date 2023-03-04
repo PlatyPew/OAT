@@ -9,11 +9,10 @@ const AccountInfoSchema = new mongoose.Schema(
         password: { type: "String" },
         gpgKeyId: { type: "String" },
         prevApiKey: { type: "Buffer" },
-        nextApiKey: { type: "Buffer" }
+        nextApiKey: { type: "Buffer" },
     },
     { collection: "accounts", versionKey: false }
 );
-
 
 module.exports = {
     AccountInfoModel: mongoose.model("AccountInfoModel", AccountInfoSchema),

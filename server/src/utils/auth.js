@@ -2,9 +2,9 @@ const { AccountInfoModel } = require("../models/AccountModel");
 
 /**
  * Verify and authenticate account on MongoDB
- * 
- * @param {string} email - Account email 
- * @param {string} password - Account password 
+ *
+ * @param {string} email - Account email
+ * @param {string} password - Account password
  * @returns {boolean} True: Account authenticated, False: Account not found / Password incorrect
  */
 const verifyCredentials = async (email, password) => {
@@ -18,5 +18,5 @@ const verifyCredentials = async (email, password) => {
 };
 
 module.exports = {
-    verifyCredentials: verifyCredentials
+    verifyCredentials: verifyCredentials,
 };

@@ -2,20 +2,20 @@ const { spawnSync } = require("child_process");
 const commandExistsSync = require("command-exists").sync;
 
 /**
- * Checks if gpg is installed in path
+ * checks if gpg is installed in path
  *
- * @returns {boolean} Boolean result if gpg is installed
+ * @returns {boolean} boolean result if gpg is installed
  */
 const _gpgExists = () => {
     return commandExistsSync("gpg");
 };
 
 /**
- * Signs data and returns output as bytes
+ * signs data and returns output as bytes
  *
- * @param {string} keyId - ID of key
- * @param {bytes} data - Data to sign
- * @returns {bytes} Signed Data
+ * @param {string} keyId - id of key
+ * @param {bytes} data - data to sign
+ * @returns {bytes} signed data
  */
 const sign = (keyId, data) => {
     if (!_gpgExists()) throw new Error("GPG command does not exist");
@@ -30,11 +30,11 @@ const sign = (keyId, data) => {
 };
 
 /**
- * Verify and returns data
+ * verify and returns data
  *
- * @param {string} keyId - Key To Use
- * @param {bytes} data - Data To Verify
- * @returns {bytes} Signed Content
+ * @param {string} keyId - key to use
+ * @param {bytes} data - data to verify
+ * @returns {bytes} signed content
  */
 const verify = (keyId, data) => {
     if (!_gpgExists()) throw new Error("GPG command does not exist");
@@ -52,11 +52,11 @@ const verify = (keyId, data) => {
 };
 
 /**
- * Encrypt data and returns output as bytes
+ * encrypt data and returns output as bytes
  *
- * @param {string} keyId - Key To Use
- * @param {bytes} data - Data To Encrypt
- * @returns {bytes} Encrypted Data
+ * @param {string} keyId - key to use
+ * @param {bytes} data - data to encrypt
+ * @returns {bytes} encrypted data
  */
 const encrypt = (keyId, data) => {
     if (!_gpgExists()) throw new Error("GPG command does not exist");
@@ -75,10 +75,10 @@ const encrypt = (keyId, data) => {
 };
 
 /**
- * Decrypt data and returns output as bytes
+ * decrypt data and returns output as bytes
  *
- * @param {bytes} data - Data To Decrypt
- * @returns {bytes} Decrypted Data
+ * @param {bytes} data - data to decrypt
+ * @returns {bytes} decrypted data
  */
 const decrypt = (data) => {
     if (!_gpgExists()) throw new Error("GPG command does not exist");
@@ -93,10 +93,10 @@ const decrypt = (data) => {
 };
 
 /**
- * Imports key and returns key ID
+ * imports key and returns key ID
  *
- * @param {bytes} data - Public Key In Bytes
- * @returns {string} Key ID
+ * @param {bytes} data - public key in bytes
+ * @returns {string} key id
  */
 const importKey = (data) => {
     if (!_gpgExists()) throw new Error("GPG command does not exist");
@@ -111,10 +111,10 @@ const importKey = (data) => {
 };
 
 /**
- * Returns public key as bytes
+ * returns public key as bytes
  *
- * @param {string} keyId - Key To Export
- * @returns {bytes} Exported Key
+ * @param {string} keyId - key to export
+ * @returns {bytes} exported key
  */
 const exportKey = (keyId) => {
     if (!_gpgExists()) throw new Error("GPG command does not exist");
@@ -127,11 +127,11 @@ const exportKey = (keyId) => {
 };
 
 /**
- * Generates key pair
+ * generates key pair
  *
- * @param {string} keyEmail - Key Email
- * @param {string} password - Password To Encrypt Key
- * @returns {boolean} Boolean of successful generation
+ * @param {string} keyEmail - key email
+ * @param {string} password - password to encrypt key
+ * @returns {boolean} boolean of successful generation
  */
 const genKey = (keyEmail, password) => {
     if (!_gpgExists()) throw new Error("GPG command does not exist");

@@ -19,14 +19,14 @@ const router = express.Router();
  * @res.send {boolean, boolean|string} - Boolean value to indicate result, Base64 encoded and encrypted RNG, metadata
  */
 router.get("/", async (req, res) => {
+    const token = req.get("OAK");
+
     res.setHeader("Content-Type", "application/json");
     try {
-        const token = req.get("OAK");
         const { newToken, valid } = await updateByToken(token, {});
 
         res.setHeader("OAK", newToken);
         res.status(200).json({
-            ok: true,
             sync: valid,
         });
     } catch (err) {

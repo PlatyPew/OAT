@@ -2,11 +2,8 @@
 const express = require("express");
 
 // GPG + MongoDB Update Module
-const { verifyCredentials } = require("../utils/auth");
+const { verifyCredentials, alreadyInit } = require("../utils/auth");
 const { updateByAccount } = require("../utils/update");
-
-// OAK Module
-const oak = require("../utils/oak");
 
 // Setup the express server router
 const router = express.Router();
@@ -26,22 +23,26 @@ const router = express.Router();
  * @res.send {boolean, <string>} - Boolean value to indicate result, error message if error occurred
  */
 router.post("/", async (req, res) => {
-    res.setHeader("Content-Type", "application/json");
+    const publicKeyB64 = req.get("OAK");
 
-    // Get user from the database
     const email = req.body.email;
     const password = req.body.password;
-    const publicKeyB64 = req.body.publickey;
 
+    res.setHeader("Content-Type", "application/json");
     try {
-        if (!verifyCredentials(email, password)) {
+        if (!await verifyCredentials(email, password)) {
             res.status(401).json({ response: "Wrong email or password" });
+            return;
+        }
+
+        if (await alreadyInit(email)) {
+            res.status(403).json({ response: "API token already initialised" });
+            return;
         }
 
         const token = await updateByAccount(email, publicKeyB64);
-
         res.setHeader("OAK", token);
-        res.status(200).json({ response: {} });
+        res.status(200).json({ response: "API token successfully initialised" });
     } catch (err) {
         res.status(500).json({
             response: err.toString(),

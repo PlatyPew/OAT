@@ -5,7 +5,7 @@ const { AccountInfoModel } = require("../models/AccountModel");
  *
  * @param {string} email - Account email
  * @param {string} password - Account password
- * @returns {boolean} True: Account authenticated, False: Account not found / Password incorrect
+ * @returns {promise} True: Account authenticated, False: Account not found / Password incorrect
  */
 const verifyCredentials = async (email, password) => {
     const acc = await AccountInfoModel.findOne({ email: email });
@@ -17,6 +17,13 @@ const verifyCredentials = async (email, password) => {
     return true;
 };
 
+const alreadyInit = async (email) => {
+    const acc = await AccountInfoModel.findOne({ email: email });
+
+    return acc["gpgKeyId"] !== undefined;
+};
+
 module.exports = {
     verifyCredentials: verifyCredentials,
+    alreadyInit: alreadyInit,
 };

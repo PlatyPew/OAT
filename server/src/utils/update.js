@@ -8,7 +8,7 @@ const oak = require("./oak");
  *
  * @param {string} email - Account email
  * @param {string} publickey - Client Public Key
- * @returns {string|boolean} Base64 encoded API token
+ * @returns {promise} Base64 encoded API token
  */
 const updateByAccount = async (email, publicKeyB64) => {
     const acc = await AccountInfoModel.findOne({ email: email });
@@ -47,7 +47,7 @@ const updateByAccount = async (email, publicKeyB64) => {
  *
  * @param {string} token - Token supplied by client in HTTP Request Header
  * @param {json} newfields - new session data fields to update
- * @returns {string, boolean} Base64 encoded API token, boolean value for token validity
+ * @returns {promise} Base64 encoded API token, boolean value for token validity
  */
 const updateByToken = async (token, newfields) => {
     const tokenFromNextApiKey = await oak.rollToken(

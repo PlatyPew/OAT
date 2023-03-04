@@ -19,23 +19,28 @@ const router = express.Router();
  * @res.send {boolean, boolean|string} - Boolean value to indicate result, Base64 encoded and encrypted RNG, metadata
  */
 router.get("/", async (req, res) => {
+    res.setHeader("Content-Type", "application/json");
+
     const token = req.get("OAK");
     if (token === undefined) {
         res.status(401).json({ response: "OAK Token Missing" });
         return;
     }
 
-    res.setHeader("Content-Type", "application/json");
     try {
-        const { newToken } = await updateByToken(token, {});
+        const { err, result } = await updateByToken(token, {});
 
+        if (err) {
+            res.status(403).json({ response: err });
+            return;
+        }
+
+        const newToken = result;
         res.setHeader("OAK", newToken);
         res.status(200).json({ response: "Good Request" });
     } catch (err) {
-        res.status(503).json({
-            ok: false,
-            response: err.toString(),
-        });
+        console.error(err.toString());
+        res.status(500).json({ response: "Invalid token" });
     }
 });
 

@@ -60,9 +60,8 @@ router.post("/", async (req, res) => {
         res.setHeader("OAK", token);
         res.status(200).json({ response: "API token successfully initialised" });
     } catch (err) {
-        res.status(500).json({
-            response: err.toString(),
-        });
+        console.error(err.toString());
+        res.status(500).json({ response: "Something went wrong" });
     }
 });
 

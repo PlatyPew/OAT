@@ -45,7 +45,7 @@ const verify = (keyId, data) => {
 
     if (gpg.status !== 0) throw new Error(gpg.stderr);
 
-    if (!gpg.stderr.includes(` ${keyId}\n`) || !gpg.stderr.includes(` ${keyId}\r`))
+    if (!gpg.stderr.includes(` ${keyId}\n`) && !gpg.stderr.includes(` ${keyId}\r`))
         throw new Error("Invalid Key ID");
 
     return gpg.stdout;
@@ -146,7 +146,9 @@ const genKey = (keyEmail, password) => {
         "default",
     ]);
 
-    return gpg.status === 0;
+    if (gpg.status !== 0) throw new Error(gpg.stderr.toString());
+
+    return gpg.stderr.toString().match(/\/([A-F0-9]{40})\./)[0];
 };
 
 module.exports = {

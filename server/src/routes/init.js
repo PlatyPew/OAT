@@ -23,24 +23,40 @@ const router = express.Router();
  * @res.send {boolean, <string>} - Boolean value to indicate result, error message if error occurred
  */
 router.post("/", async (req, res) => {
+    res.setHeader("Content-Type", "application/json");
+
     const publicKeyB64 = req.get("OAK");
 
     const email = req.body.email;
     const password = req.body.password;
 
-    res.setHeader("Content-Type", "application/json");
+    // If public key is not provided
+    if (!publicKeyB64) {
+        res.status(400).json({ response: "No public key found" });
+        return;
+    }
+
     try {
-        if (!await verifyCredentials(email, password)) {
+        // Checks if credentals match
+        if (!(await verifyCredentials(email, password))) {
             res.status(401).json({ response: "Wrong email or password" });
             return;
         }
 
+        // Check if token has already been initialised
         if (await alreadyInit(email)) {
             res.status(403).json({ response: "API token already initialised" });
             return;
         }
 
-        const token = await updateByAccount(email, publicKeyB64);
+        const { err, result } = await updateByAccount(email, publicKeyB64);
+
+        if (err) {
+            res.status(400).json({ response: err });
+            return;
+        }
+        const token = result;
+
         res.setHeader("OAK", token);
         res.status(200).json({ response: "API token successfully initialised" });
     } catch (err) {

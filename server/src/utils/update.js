@@ -13,20 +13,22 @@ const oak = require("./oak");
 const updateByAccount = async (email, publicKeyB64) => {
     const acc = await AccountInfoModel.findOne({ email: email });
 
-    if (!acc) throw new Error("Account not found");
-
-    if (!publicKeyB64) throw new Error("Public key not supplied");
+    if (!acc) return { err: "Account not found", result: undefined };
 
     // OAK init function
-    const token = oak.initToken(publicKeyB64, {}, async (keyId, nextKey) => {
-        // Store token in both prevApiKey and nextApiKey
-        acc.prevApiKey = nextKey;
-        acc.nextApiKey = nextKey;
-        acc.gpgKeyId = keyId;
-        acc.save();
-    });
+    try {
+        const token = oak.initToken(publicKeyB64, {}, async (keyId, nextKey) => {
+            // Store token in both prevApiKey and nextApiKey
+            acc.prevApiKey = nextKey;
+            acc.nextApiKey = nextKey;
+            acc.gpgKeyId = keyId;
+            acc.save();
+        });
 
-    return token;
+        return { err: undefined, result: token };
+    } catch {
+        return { err: "Invalid public key", result: undefined };
+    }
 };
 
 /**

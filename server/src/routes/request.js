@@ -20,15 +20,17 @@ const router = express.Router();
  */
 router.get("/", async (req, res) => {
     const token = req.get("OAK");
+    if (token === undefined) {
+        res.status(401).json({ response: "OAK Token Missing" });
+        return;
+    }
 
     res.setHeader("Content-Type", "application/json");
     try {
-        const { newToken, valid } = await updateByToken(token, {});
+        const { newToken } = await updateByToken(token, {});
 
         res.setHeader("OAK", newToken);
-        res.status(200).json({
-            sync: valid,
-        });
+        res.status(200).json({ response: "Good Request" });
     } catch (err) {
         res.status(503).json({
             ok: false,

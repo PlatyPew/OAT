@@ -34,6 +34,9 @@ app.use("/api/init", auth);
 const request = require("./src/routes/request");
 app.use("/api/request", request);
 
+const market = require("./src/routes/market");
+app.use("/api/market", market);
+
 // Start Server
 console.log(`Waiting to connect to ${MONGO}`);
 mongoose.set("strictQuery", false);

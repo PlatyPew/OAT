@@ -69,7 +69,7 @@ const updateByToken = async (token, newfields) => {
         }
     );
 
-    if (tokenFromNextApiKey) return { err: undefined, result: tokenFromNextApiKey };
+    if (tokenFromNextApiKey) return { err: undefined, result: tokenFromNextApiKey, valid: true };
 
     // If current token != nextApiKey in database, check if current token == prevApiKey
     const tokenFromPrevApiKey = await oak.rollToken(
@@ -91,7 +91,7 @@ const updateByToken = async (token, newfields) => {
     // If current token != prevApiKey in database, return error message
     if (!tokenFromPrevApiKey) return { err: "Token Mismatch", result: undefined };
 
-    return { err: undefined, result: tokenFromPrevApiKey };
+    return { err: undefined, result: tokenFromPrevApiKey, valid: false };
 };
 
 module.exports = {

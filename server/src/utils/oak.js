@@ -143,7 +143,7 @@ const initToken = (pubKeyB64, newFields, cb) => {
  * @async
  * @param {function} getKeyFunc - function to fetch the key from the server
  * @param {string} token - token sent from the client
- * @returns {json} key id and current key
+ * @returns {promise} key id and current key
  */
 const _authToken = async (getKeyFunc, token) => {
     const { signedKey, fields, hmac } = _splitToken(token);
@@ -169,7 +169,7 @@ const _authToken = async (getKeyFunc, token) => {
  * @param {string} token - tokent sent from the client
  * @param {json} newfields - new session data fields to update
  * @param {function} cb - returns the new key
- * @returns {string|boolean} next encrypted token and session data fields
+ * @returns {promise} next encrypted token
  */
 const rollToken = async (getKeyFunc, token, newfields, cb) => {
     const auth = await _authToken(getKeyFunc, token);

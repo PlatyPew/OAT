@@ -2,6 +2,9 @@
 const express = require("express");
 const app = express();
 
+const https = require("https");
+const fs = require("fs");
+
 // Imports for express
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -12,6 +15,12 @@ const PORT = 3000;
 
 // URI for Mongodb
 const MONGO = "mongodb://localhost/oak";
+
+// HTTPS settings
+const SSL_OPTIONS = {
+    key: fs.readFileSync("key.pem"),
+    cert: fs.readFileSync("cert.pem"),
+};
 
 app.use(cors());
 
@@ -29,5 +38,7 @@ app.use("/api/request", request);
 console.log(`Waiting to connect to ${MONGO}`);
 mongoose.set("strictQuery", false);
 mongoose.connect(MONGO, { useNewUrlParser: true, useUnifiedTopology: true }, () => {
-    app.listen(PORT, () => console.log(`App listening on port ${PORT}`));
+    https
+        .createServer(SSL_OPTIONS, app)
+        .listen(PORT, () => console.log(`App listening on port ${PORT}`));
 });

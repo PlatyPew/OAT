@@ -126,6 +126,7 @@ router.post("/store/buy", async (req, res) => {
 
     try {
         let newFields = oak.getSessionData(token);
+        const cart = newFields.cart;
         if (await validCurrentToken(token)) {
             await market.buyItems(newFields.cart);
             newFields.cart = {};
@@ -143,7 +144,7 @@ router.post("/store/buy", async (req, res) => {
             return;
         }
 
-        res.status(200).json({ response: "OK" });
+        res.status(200).json({ response: cart });
     } catch (err) {
         console.error(err);
         res.status(500).json({ response: "Invalid token" });

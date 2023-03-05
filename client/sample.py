@@ -68,6 +68,19 @@ def get_store_inventory():
     return res.text
 
 
+def get_cart_inventory():
+    res = requests.get(f"{URL}/api/market/cart/get", headers=_gen_token(), verify=False)
+
+    if res.status_code != 200:
+        raise Exception("API not cooperating")
+
+    token = res.headers.get("OAK")
+    if not token is None:
+        _update_token(token)
+
+    return res.text
+
+
 def main():
     global curr_token
     _get_token()

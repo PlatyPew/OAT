@@ -5,7 +5,7 @@ const express = require("express");
 const router = express.Router();
 
 // GPG + MongoDB Update Module
-const { updateByToken } = require("../utils/update");
+const { updateByToken, validCurrentToken } = require("../utils/update");
 
 const oak = require("../utils/oak.js");
 
@@ -82,13 +82,13 @@ router.post("/cart/set", async (req, res) => {
 
     let cart = req.body;
 
-    try {
-        const token = req.get("OAK");
-        if (token === undefined) {
-            res.status(401).json({ response: "OAK Token Missing" });
-            return;
-        }
+    const token = req.get("OAK");
+    if (token === undefined) {
+        res.status(401).json({ response: "OAK Token Missing" });
+        return;
+    }
 
+    try {
         cart = await market.setCart(cart);
         const newFields = oak.getSessionData(token);
         newFields.cart = cart;
@@ -118,8 +118,37 @@ router.post("/cart/set", async (req, res) => {
 });
 
 router.post("/store/buy", async (req, res) => {
+    const token = req.get("OAK");
+    if (token === undefined) {
+        res.status(401).json({ response: "OAK Token Missing" });
+        return;
+    }
 
-})
+    try {
+        let newFields = oak.getSessionData(token);
+        if (await validCurrentToken(token)) {
+            await market.buyItems(newFields.cart);
+            newFields.cart = {};
+        }
+
+        const { err, newToken, valid } = await updateByToken(token, newFields);
+        if (err) {
+            res.status(403).json({ response: err });
+            return;
+        }
+
+        res.setHeader("OAK", newToken);
+        if (!valid) {
+            res.status(204).json();
+            return;
+        }
+
+        res.status(200).json({ response: "OK" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ response: "Invalid token" });
+    }
+});
 
 // Export the router
 module.exports = router;

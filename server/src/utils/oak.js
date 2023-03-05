@@ -152,7 +152,7 @@ const initToken = (pubKeyB64, newFields, cb) => {
  * @param {string} token - token sent from the client
  * @returns {promise} key id and current key
  */
-const _authToken = async (getKeyFunc, token) => {
+const authToken = async (getKeyFunc, token) => {
     const { signedKey, fields, hmac } = _splitToken(token);
 
     const keyId = fields.pubkeyid;
@@ -177,7 +177,7 @@ const _authToken = async (getKeyFunc, token) => {
  * @returns {promise} next encrypted token
  */
 const rollToken = async (getKeyFunc, token, newfields, cb) => {
-    const auth = await _authToken(getKeyFunc, token);
+    const auth = await authToken(getKeyFunc, token);
     if (!auth) return false;
 
     const { keyId, serverKey } = auth;
@@ -196,6 +196,7 @@ const rollToken = async (getKeyFunc, token, newfields, cb) => {
 
 module.exports = {
     initToken: initToken,
+    authToken: authToken,
     rollToken: rollToken,
     getSessionData: getSessionData,
 };

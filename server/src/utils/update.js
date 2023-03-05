@@ -98,7 +98,18 @@ const updateByToken = async (token, newfields) => {
     return { err: undefined, newToken: tokenFromPrevApiKey, valid: false };
 };
 
+const validCurrentToken = async (token) => {
+    const result = await oak.authToken(async (keyId) => {
+        // Find next token value in database
+        const acc = await AccountInfoModel.findOne({ gpgKeyId: keyId });
+        return Buffer.from(acc.nextApiKey);
+    }, token);
+
+    return result;
+};
+
 module.exports = {
     updateByAccount: updateByAccount,
     updateByToken: updateByToken,
+    validCurrentToken: validCurrentToken,
 };

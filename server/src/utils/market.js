@@ -22,13 +22,23 @@ const setCart = async (cart) => {
         });
 
         return cart;
-    } catch(err) {
+    } catch (err) {
         return null;
     }
+};
+
+const buyItems = async (cart) => {
+    const inventory = (await InventoryInfoModel.find())[0];
+
+    Object.keys(cart).forEach((item) => {
+        inventory[item] -= cart[item];
+    });
+    inventory.save();
 };
 
 module.exports = {
     getCart: getCart,
     setCart: setCart,
     getInventory: getInventory,
+    buyItems: buyItems,
 };

@@ -83,9 +83,9 @@ def get_cart_inventory():
 
 def set_cart_inventory(cart={}):
     res = requests.post(f"{URL}/api/market/cart/set",
-                       headers={"OAK": _gen_token()},
-                       data=cart,
-                       verify=False)
+                        headers={"OAK": _gen_token()},
+                        data=cart,
+                        verify=False)
 
     if res.status_code != 200:
         raise Exception("API not cooperating")

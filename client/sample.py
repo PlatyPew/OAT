@@ -97,6 +97,19 @@ def set_cart_inventory(cart={}):
     return res.text
 
 
+def buy_from_cart():
+    res = requests.get(f"{URL}/api/market/store/buy", headers={"OAK": _gen_token()}, verify=False)
+
+    if res.status_code != 200 and res.status_code != 204:
+        raise Exception("API not cooperating")
+
+    token = res.headers.get("OAK")
+    if not token is None:
+        _update_token(token)
+
+    return res.text
+
+
 def main():
     global curr_token
     _get_token()

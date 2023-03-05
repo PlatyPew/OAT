@@ -13,7 +13,7 @@ const oak = require("./oak");
 const updateByAccount = async (email, publicKeyB64) => {
     const acc = await AccountInfoModel.findOne({ email: email });
 
-    if (!acc) return { err: "Account not found", result: undefined };
+    if (!acc) return { err: "Account not found", newToken: undefined };
 
     // OAK init function
     try {
@@ -29,9 +29,9 @@ const updateByAccount = async (email, publicKeyB64) => {
             }
         );
 
-        return { err: undefined, result: token };
+        return { err: undefined, newToken: token };
     } catch {
-        return { err: "Invalid public key", result: undefined };
+        return { err: "Invalid public key", newToken: undefined };
     }
 };
 
@@ -73,7 +73,7 @@ const updateByToken = async (token, newfields) => {
         }
     );
 
-    if (tokenFromNextApiKey) return { err: undefined, result: tokenFromNextApiKey, valid: true };
+    if (tokenFromNextApiKey) return { err: undefined, newToken: tokenFromNextApiKey, valid: true };
 
     // If current token != nextApiKey in database, check if current token == prevApiKey
     const tokenFromPrevApiKey = await oak.rollToken(
@@ -93,9 +93,9 @@ const updateByToken = async (token, newfields) => {
     );
 
     // If current token != prevApiKey in database, return error message
-    if (!tokenFromPrevApiKey) return { err: "Token Mismatch", result: undefined };
+    if (!tokenFromPrevApiKey) return { err: "Token Mismatch", newToken: undefined };
 
-    return { err: undefined, result: tokenFromPrevApiKey, valid: false };
+    return { err: undefined, newToken: tokenFromPrevApiKey, valid: false };
 };
 
 module.exports = {

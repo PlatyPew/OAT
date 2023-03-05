@@ -22,21 +22,19 @@ router.get("/store/get", async (req, res) => {
     }
 
     try {
-        const { err, result, valid } = await updateByToken(token, {});
+        const { err, newToken, valid } = await updateByToken(token, {});
         if (err) {
             res.status(403).json({ response: err });
             return;
         }
 
+        res.setHeader("OAK", newToken);
         if (!valid) {
             res.status(204).json();
             return;
         }
 
         const inventory = await market.getInventory();
-
-        const newToken = result;
-        res.setHeader("OAK", newToken);
         res.status(200).json({ response: inventory });
     } catch (err) {
         console.error(err.toString());
@@ -55,12 +53,13 @@ router.get("/cart/get", async (req, res) => {
     }
 
     try {
-        const { err, result, valid } = await updateByToken(token, oak.getSessionData(token));
+        const { err, newToken, valid } = await updateByToken(token, oak.getSessionData(token));
         if (err) {
             res.status(403).json({ response: err });
             return;
         }
 
+        res.setHeader("OAK", newToken);
         if (!valid) {
             res.status(204).json();
             return;
@@ -68,8 +67,6 @@ router.get("/cart/get", async (req, res) => {
 
         const cart = market.getCart(token);
 
-        const newToken = result;
-        res.setHeader("OAK", newToken);
         res.status(200).json({ response: cart });
     } catch (err) {
         console.error(err.toString());
@@ -101,19 +98,18 @@ router.post("/cart/set", async (req, res) => {
             return;
         }
 
-        const { err, result, valid } = await updateByToken(token, newFields);
+        const { err, newToken, valid } = await updateByToken(token, newFields);
         if (err) {
             res.status(403).json({ response: err });
             return;
         }
 
+        res.setHeader("OAK", newToken);
         if (!valid) {
             res.status(204).json();
             return;
         }
 
-        const newToken = result;
-        res.setHeader("OAK", newToken);
         res.status(200).json({ response: cart });
     } catch (err) {
         console.error(err.toString());

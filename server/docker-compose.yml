@@ -1,0 +1,28 @@
+version: "3.9"
+
+services:
+  restapi:
+    build: .
+    container_name: restapi
+    environment:
+      - OAK_PASS=${OAK_PASS}
+    restart: always
+    networks:
+      - db
+    ports:
+      - "3000:3000"
+    volumes:
+      - "./cert.pem:/opt/market/cert.pem:ro"
+      - "./key.pem:/opt/market/key.pem:rw"
+
+
+  database:
+    image: mongo
+    container_name: database
+    restart: always
+    networks:
+      - db
+
+networks:
+  db:
+    name: oak_db_local

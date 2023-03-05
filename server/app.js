@@ -14,7 +14,7 @@ const mongoose = require("mongoose");
 const PORT = 3000;
 
 // URI for Mongodb
-const MONGO = "mongodb://localhost/oak";
+const MONGO = "mongodb://database/oak";
 
 // Initialise database
 (async () => {
@@ -51,6 +51,8 @@ const MONGO = "mongodb://localhost/oak";
         ]);
     }
 })();
+
+if (!process.env.OAK_PASS) throw Error("OAK_PASS is not set");
 
 // HTTPS settings
 const SSL_OPTIONS = {

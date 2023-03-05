@@ -33,7 +33,7 @@ def _get_token():
                         verify=False)
 
     if res.status_code != 200:
-        raise Exception("API not cooperating")
+        raise Exception(res.text)
 
     token = res.headers.get("OAK")
     if not token is None:
@@ -59,7 +59,7 @@ def get_store_inventory():
     res = requests.get(f"{URL}/api/market/store/get", headers={"OAK": _gen_token()}, verify=False)
 
     if res.status_code != 200 and res.status_code != 204:
-        raise Exception("API not cooperating")
+        raise Exception(res.text)
 
     token = res.headers.get("OAK")
     if not token is None:
@@ -72,7 +72,7 @@ def get_cart_inventory():
     res = requests.get(f"{URL}/api/market/cart/get", headers={"OAK": _gen_token()}, verify=False)
 
     if res.status_code != 200 and res.status_code != 204:
-        raise Exception("API not cooperating")
+        raise Exception(res.text)
 
     token = res.headers.get("OAK")
     if not token is None:
@@ -88,7 +88,7 @@ def set_cart_inventory(cart={}):
                         verify=False)
 
     if res.status_code != 200:
-        raise Exception("API not cooperating")
+        raise Exception(res.text)
 
     token = res.headers.get("OAK")
     if not token is None:
@@ -98,10 +98,10 @@ def set_cart_inventory(cart={}):
 
 
 def buy_from_cart():
-    res = requests.get(f"{URL}/api/market/store/buy", headers={"OAK": _gen_token()}, verify=False)
+    res = requests.post(f"{URL}/api/market/store/buy", headers={"OAK": _gen_token()}, verify=False)
 
     if res.status_code != 200 and res.status_code != 204:
-        raise Exception("API not cooperating")
+        raise Exception(res.text)
 
     token = res.headers.get("OAK")
     if not token is None:

@@ -17,13 +17,17 @@ const updateByAccount = async (email, publicKeyB64) => {
 
     // OAK init function
     try {
-        const token = oak.initToken(publicKeyB64, {}, async (keyId, nextKey) => {
-            // Store token in both prevApiKey and nextApiKey
-            acc.prevApiKey = nextKey;
-            acc.nextApiKey = nextKey;
-            acc.gpgKeyId = keyId;
-            acc.save();
-        });
+        const token = oak.initToken(
+            publicKeyB64,
+            { admin: acc.admin, cart: {} },
+            async (keyId, nextKey) => {
+                // Store token in both prevApiKey and nextApiKey
+                acc.prevApiKey = nextKey;
+                acc.nextApiKey = nextKey;
+                acc.gpgKeyId = keyId;
+                acc.save();
+            }
+        );
 
         return { err: undefined, result: token };
     } catch {

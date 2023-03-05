@@ -1,3 +1,5 @@
+const crypto = require("crypto");
+
 const { AccountInfoModel } = require("../models/AccountModel");
 
 /**
@@ -12,7 +14,7 @@ const verifyCredentials = async (email, password) => {
 
     if (!acc) return false;
 
-    if (acc.password !== password) return false;
+    if (acc.password !== crypto.createHash("sha3-512").update(password).digest("hex")) return false;
 
     return true;
 };

@@ -94,7 +94,7 @@ router.post("/cart/set", async (req, res) => {
             return;
         }
 
-        const newFields = (oak.getSessionData(token).cart = cart);
+        const newFields = await market.setCart(cart);
 
         const { err, result, valid } = await updateByToken(token, newFields);
         if (err) {
@@ -110,7 +110,12 @@ router.post("/cart/set", async (req, res) => {
             return;
         }
 
-        res.status(200).json({ response: "OK" });
+        if (newFields === null) {
+            res.status(400).json({ response: "Cart Not Valid" });
+            return;
+        }
+
+        res.status(200).json({ response: newFields });
     } catch (err) {
         console.error(err.toString());
         res.status(500).json({ response: "Invalid token" });

@@ -83,7 +83,7 @@ const updateByToken = async (token, newfields) => {
             return Buffer.from(acc.prevApiKey);
         },
         token,
-        newfields,
+        oak.getSessionData(token),
         async (keyId, nextApiKey) => {
             const acc = await AccountInfoModel.findOne({ gpgKeyId: keyId });
             // Store next token in nextApiKey

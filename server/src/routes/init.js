@@ -1,14 +1,9 @@
 // Import dependencies
 const express = require("express");
-const mongoose = require("mongoose");
 
 // GPG + MongoDB Update Module
-// const gpg = require('../utils/gpg');
-const { verifyCredentials } = require("../utils/auth");
+const { verifyCredentials, alreadyInit } = require("../utils/auth");
 const { updateByAccount } = require("../utils/update");
-
-// OAK Module
-const oak = require('../utils/oak');
 
 // Setup the express server router
 const router = express.Router();
@@ -16,42 +11,56 @@ const router = express.Router();
 /**
  * <url>/api/init
  * Authenticate email:password
- * 
+ *
  * update.updateByAccount():
- * Verify account 
+ * Verify account
  * Call oak.js initToken()
- * 
- * @req.body {string} email - Account email 
- * @req.body {string} password - Account password 
+ *
+ * @req.body {string} email - Account email
+ * @req.body {string} password - Account password
  * @req.body {string} publickey - Client GPG public key
  * @res.header {string} OAK - Base64 encoded API token
  * @res.send {boolean, <string>} - Boolean value to indicate result, error message if error occurred
  */
-router.post("/", async(req, res) => {
+router.post("/", async (req, res) => {
     res.setHeader("Content-Type", "application/json");
 
-    // Get user from the database
+    const publicKeyB64 = req.get("OAK");
+
     const email = req.body.email;
     const password = req.body.password;
-    const publicKeyB64 = req.body.publickey;
-    
-    try {
-        verifyCredentials(email, password);
 
-        const token = await updateByAccount(email, publicKeyB64);
-        
-        res.setHeader("OAK", token);
-        res.status(200).json({
-            ok: true
-        });
+    // If public key is not provided
+    if (!publicKeyB64) {
+        res.status(400).json({ response: "No public key found" });
+        return;
     }
-    catch (err) {
-        res.status(503).json({
-            ok: false,
-            response: err.toString()
-        });
+
+    try {
+        // Checks if credentals match
+        if (!(await verifyCredentials(email, password))) {
+            res.status(401).json({ response: "Wrong email or password" });
+            return;
+        }
+
+        // Check if token has already been initialised
+        if (await alreadyInit(email)) {
+            res.status(403).json({ response: "API token already initialised" });
+            return;
+        }
+
+        const { err, newToken } = await updateByAccount(email, publicKeyB64);
+
+        if (err) {
+            res.status(400).json({ response: err });
+            return;
+        }
+        res.setHeader("OAK", newToken)
+        res.status(200).json({ response: "API token successfully initialised" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ response: "Something went wrong" });
     }
-    
 });
 
 // Export the router

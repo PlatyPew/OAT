@@ -1,25 +1,31 @@
-const { AccountInfoModel } = require("../models/AccountModel");
+const crypto = require("crypto");
 
-// GPG Module
-const gpg = require('./gpg');
+const { AccountInfoModel } = require("../models/AccountModel");
 
 /**
  * Verify and authenticate account on MongoDB
- * 
- * @param {string} email - Account email 
- * @param {string} password - Account password 
- * @returns {boolean} True: Account authenticated, False: Account not found / Password incorrect
+ *
+ * @param {string} email - Account email
+ * @param {string} password - Account password
+ * @returns {promise} True: Account authenticated, False: Account not found / Password incorrect
  */
 const verifyCredentials = async (email, password) => {
     const acc = await AccountInfoModel.findOne({ email: email });
 
-    if (!acc) throw new Error("Email and password incorrect");
+    if (!acc) return false;
 
-    if (acc.password !== password) throw new Error("Email and password incorrect");
+    if (acc.password !== crypto.createHash("sha3-512").update(password).digest("hex")) return false;
 
     return true;
 };
 
+const alreadyInit = async (email) => {
+    const acc = await AccountInfoModel.findOne({ email: email });
+
+    return acc["gpgKeyId"] !== undefined;
+};
+
 module.exports = {
-    verifyCredentials: verifyCredentials
+    verifyCredentials: verifyCredentials,
+    alreadyInit: alreadyInit,
 };

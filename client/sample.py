@@ -52,13 +52,13 @@ def _gen_token():
     global curr_token
     rolled_token = oak.roll_token(curr_token.encode())
 
-    return {"OAK": rolled_token.decode()}
+    return rolled_token.decode()
 
 
 def get_store_inventory():
-    res = requests.get(f"{URL}/api/market/store/get", headers=_gen_token(), verify=False)
+    res = requests.get(f"{URL}/api/market/store/get", headers={"OAK": _gen_token()}, verify=False)
 
-    if res.status_code != 200:
+    if res.status_code != 200 and res.status_code != 204:
         raise Exception("API not cooperating")
 
     token = res.headers.get("OAK")

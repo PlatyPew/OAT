@@ -85,7 +85,7 @@ router.post("/cart/set", async (req, res) => {
         return;
     }
 
-    const cart = req.body;
+    let cart = req.body;
 
     try {
         const token = req.get("OAK");
@@ -94,7 +94,14 @@ router.post("/cart/set", async (req, res) => {
             return;
         }
 
-        const newFields = await market.setCart(cart);
+        cart = await market.setCart(cart);
+        const newFields = oak.getSessionData(token);
+        newFields.cart = cart;
+
+        if (newFields.cart === null) {
+            res.status(400).json({ response: "Cart Not Valid" });
+            return;
+        }
 
         const { err, result, valid } = await updateByToken(token, newFields);
         if (err) {
@@ -110,12 +117,7 @@ router.post("/cart/set", async (req, res) => {
             return;
         }
 
-        if (newFields === null) {
-            res.status(400).json({ response: "Cart Not Valid" });
-            return;
-        }
-
-        res.status(200).json({ response: newFields });
+        res.status(200).json({ response: cart });
     } catch (err) {
         console.error(err.toString());
         res.status(500).json({ response: "Invalid token" });

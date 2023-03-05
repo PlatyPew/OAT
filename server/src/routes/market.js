@@ -22,7 +22,7 @@ router.get("/store/get", async (req, res) => {
     }
 
     try {
-        const { err, newToken, valid } = await updateByToken(token, {});
+        const { err, newToken, valid } = await updateByToken(token, oak.getSessionData(token));
         if (err) {
             res.status(403).json({ response: err });
             return;

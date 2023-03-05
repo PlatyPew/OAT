@@ -147,8 +147,7 @@ const genKey = (keyEmail, password) => {
     ]);
 
     if (gpg.status !== 0) throw new Error(gpg.stderr.toString());
-
-    return gpg.stderr.toString().match(/\/([A-F0-9]{40})\./)[0];
+    return gpg.stderr.toString().match(/\/([A-F0-9]{40})\./)[1];
 };
 
 module.exports = {

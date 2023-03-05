@@ -49,18 +49,16 @@ router.post("/", async (req, res) => {
             return;
         }
 
-        const { err, result } = await updateByAccount(email, publicKeyB64);
+        const { err, newToken } = await updateByAccount(email, publicKeyB64);
 
         if (err) {
             res.status(400).json({ response: err });
             return;
         }
-        const token = result;
-
-        res.setHeader("OAK", token);
+        res.setHeader("OAK", newToken)
         res.status(200).json({ response: "API token successfully initialised" });
     } catch (err) {
-        console.error(err.toString());
+        console.error(err);
         res.status(500).json({ response: "Something went wrong" });
     }
 });

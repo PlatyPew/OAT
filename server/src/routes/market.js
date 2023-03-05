@@ -11,7 +11,7 @@ const oak = require("../utils/oak.js");
 
 const market = require("../utils/market.js");
 
-router.get("/store/list", async (req, res) => {
+router.get("/store/get", async (req, res) => {
     res.setHeader("Content-Type", "application/json");
 
     // Check if token exists
@@ -45,7 +45,7 @@ router.get("/store/list", async (req, res) => {
     }
 });
 
-router.get("/cart/list", async (req, res) => {
+router.get("/cart/get", async (req, res) => {
     res.setHeader("Content-Type", "application/json");
 
     // Check if token exists
@@ -73,6 +73,44 @@ router.get("/cart/list", async (req, res) => {
         const cart = market.getCart(token);
 
         res.status(200).json({ response: cart });
+    } catch (err) {
+        console.error(err.toString());
+        res.status(500).json({ response: "Invalid token" });
+    }
+});
+
+router.post("/cart/set", async (req, res) => {
+    if (!req.accepts("json")) {
+        res.status(400).json();
+        return;
+    }
+
+    const cart = req.body;
+
+    try {
+        const token = req.get("OAK");
+        if (token === undefined) {
+            res.status(401).json({ response: "OAK Token Missing" });
+            return;
+        }
+
+        const newFields = (oak.getSessionData(token).cart = cart);
+
+        const { err, result, valid } = await updateByToken(token, newFields);
+        if (err) {
+            res.status(403).json({ response: err });
+            return;
+        }
+
+        const newToken = result;
+        res.setHeader("OAK", newToken);
+
+        if (!valid) {
+            res.status(204).json();
+            return;
+        }
+
+        res.status(200).json({ response: "OK" });
     } catch (err) {
         console.error(err.toString());
         res.status(500).json({ response: "Invalid token" });

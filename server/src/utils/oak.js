@@ -69,29 +69,31 @@ const _stripKeyID = (fields) => {
 };
 
 /**
- * get session data from token
+ * get session data from token (does not check for integrity)
  *
  * @param {string} token - token that is sent from the client
  * @returns {json} session data extracted from the token
  */
 const getSessionData = (token) => {
-    const { fields, hmac } = _splitToken(token);
-
-    if (!_verifySessionData(fields, hmac)) throw new Error("Data Has Been Tampered");
-
+    const { fields } = _splitToken(token);
     return _stripKeyID(fields);
 };
 
 /**
  * performs hmac on session data fields to prevent tampering
  *
+ * @param {bytes} key - key of current token
  * @param {json} fields - session data to perform hmac
  * @returns {string} concatenated json data and hmac in base64
  */
-const _signSessionData = (fields) => {
+const _signSessionData = (key, fields) => {
     const fieldBytes = Buffer.from(JSON.stringify(fields));
 
-    const hmacB64 = crypto.createHmac("sha3-512", _oakPass()).update(fieldBytes).digest("base64");
+    const hmacB64 = crypto
+        .createHmac("sha3-512", _oakPass())
+        .update(fieldBytes)
+        .update(key)
+        .digest("base64");
 
     const fieldB64 = fieldBytes.toString("base64");
 
@@ -101,14 +103,19 @@ const _signSessionData = (fields) => {
 /**
  * ensures session data fields have not been tampered
  *
+ * @param {bytes} key - key of current token
  * @param {json} fields - session data fields
  * @param {bytes} hmac - hmac on session data
  * @returns {boolean} check if session data fields has been tampered
  */
-const _verifySessionData = (fields, hmac) => {
+const _verifySessionData = (key, fields, hmac) => {
     const fieldBytes = Buffer.from(JSON.stringify(fields));
 
-    const calculatedHmac = crypto.createHmac("sha3-512", _oakPass()).update(fieldBytes).digest();
+    const calculatedHmac = crypto
+        .createHmac("sha3-512", _oakPass())
+        .update(fieldBytes)
+        .update(key)
+        .digest();
 
     return Buffer.compare(calculatedHmac, hmac) === 0;
 };
@@ -132,7 +139,7 @@ const initToken = (pubKeyB64, newFields, cb) => {
     const encNextApiKeyB64 = gpg.encrypt(keyId, nextApiKey).toString("base64");
 
     const fields = _insertKeyID(keyId, newFields);
-    const data = _signSessionData(fields);
+    const data = _signSessionData(nextApiKey, fields);
 
     return `${encNextApiKeyB64}-${data}`;
 };
@@ -148,14 +155,12 @@ const initToken = (pubKeyB64, newFields, cb) => {
 const _authToken = async (getKeyFunc, token) => {
     const { signedKey, fields, hmac } = _splitToken(token);
 
-    if (!_verifySessionData(fields, hmac)) throw new Error("Data Has Been Tampered");
-
     const keyId = fields.pubkeyid;
 
     const clientApiKey = gpg.verify(keyId, signedKey);
-
     const serverApiKey = await getKeyFunc(keyId);
 
+    if (!_verifySessionData(clientApiKey, fields, hmac)) throw new Error("Data Has Been Tampered");
     if (Buffer.compare(clientApiKey, serverApiKey) !== 0) return false;
 
     return { keyId, serverKey: serverApiKey };
@@ -184,7 +189,7 @@ const rollToken = async (getKeyFunc, token, newfields, cb) => {
     const encNextKeyB64 = gpg.encrypt(keyId, nextApiKey).toString("base64");
 
     const fields = _insertKeyID(keyId, newfields);
-    const data = _signSessionData(fields);
+    const data = _signSessionData(nextApiKey, fields);
 
     return `${encNextKeyB64}-${data}`;
 };

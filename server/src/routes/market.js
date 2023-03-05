@@ -28,9 +28,6 @@ router.get("/store/get", async (req, res) => {
             return;
         }
 
-        const newToken = result;
-        res.setHeader("OAK", newToken);
-
         if (!valid) {
             res.status(204).json();
             return;
@@ -38,6 +35,8 @@ router.get("/store/get", async (req, res) => {
 
         const inventory = await market.getInventory();
 
+        const newToken = result;
+        res.setHeader("OAK", newToken);
         res.status(200).json({ response: inventory });
     } catch (err) {
         console.error(err.toString());
@@ -62,9 +61,6 @@ router.get("/cart/get", async (req, res) => {
             return;
         }
 
-        const newToken = result;
-        res.setHeader("OAK", newToken);
-
         if (!valid) {
             res.status(204).json();
             return;
@@ -72,6 +68,8 @@ router.get("/cart/get", async (req, res) => {
 
         const cart = market.getCart(token);
 
+        const newToken = result;
+        res.setHeader("OAK", newToken);
         res.status(200).json({ response: cart });
     } catch (err) {
         console.error(err.toString());
@@ -109,20 +107,23 @@ router.post("/cart/set", async (req, res) => {
             return;
         }
 
-        const newToken = result;
-        res.setHeader("OAK", newToken);
-
         if (!valid) {
             res.status(204).json();
             return;
         }
 
+        const newToken = result;
+        res.setHeader("OAK", newToken);
         res.status(200).json({ response: cart });
     } catch (err) {
         console.error(err.toString());
         res.status(500).json({ response: "Invalid token" });
     }
 });
+
+router.post("/store/buy", async (req, res) => {
+
+})
 
 // Export the router
 module.exports = router;

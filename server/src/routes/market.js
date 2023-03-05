@@ -150,5 +150,51 @@ router.post("/store/buy", async (req, res) => {
     }
 });
 
+router.post("/store/restock", async (req, res) => {
+    if (!req.accepts("json")) {
+        res.status(400).json();
+        return;
+    }
+
+    const newInventory = req.body;
+
+    const token = req.get("OAK");
+    if (token === undefined) {
+        res.status(401).json({ response: "OAK Token Missing" });
+        return;
+    }
+
+    try {
+        const newFields = oak.getSessionData(token);
+
+        const { err, newToken, valid } = await updateByToken(token, newFields);
+        if (err) {
+            res.status(403).json({ response: err });
+            return;
+        }
+
+        res.setHeader("OAK", newToken);
+        if (!newFields.admin) {
+            res.status(403).json();
+            return;
+        }
+
+        if (!valid) {
+            res.status(204).json();
+            return;
+        }
+
+        if (!(await market.setInventory(newInventory))) {
+            res.status(400).json({ response: "Incorrect Format" });
+            return;
+        }
+
+        res.status(200).json({ response: newInventory });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ response: "Invalid token" });
+    }
+});
+
 // Export the router
 module.exports = router;

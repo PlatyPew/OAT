@@ -36,9 +36,27 @@ const buyItems = async (cart) => {
     inventory.save();
 };
 
+const setInventory = async (newInventory) => {
+    const inventory = (await InventoryInfoModel.find())[0];
+
+    try {
+        Object.keys(inventory.toObject())
+            .slice(1)
+            .forEach((item) => {
+                if (!newInventory.hasOwnProperty(item)) throw "Item not there";
+                inventory[item] = newInventory[item];
+            });
+        inventory.save();
+        return true;
+    } catch {
+        return false;
+    }
+};
+
 module.exports = {
     getCart: getCart,
     setCart: setCart,
     getInventory: getInventory,
     buyItems: buyItems,
+    setInventory: setInventory,
 };

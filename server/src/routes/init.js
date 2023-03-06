@@ -14,18 +14,18 @@ const router = express.Router();
  *
  * update.updateByAccount():
  * Verify account
- * Call oak.js initToken()
+ * Call oat.js initToken()
  *
- * @req.header {string} OAK - Client GPG public key
+ * @req.header {string} OAT - Client GPG public key
  * @req.body {string} email - Account email
  * @req.body {string} password - Account password
- * @res.header {string} OAK - Base64 encoded API token
+ * @res.header {string} OAT - Base64 encoded API token
  * @res.json {string} - Send boolean value to indicate result, response message if error occurred
  */
 router.post("/", async (req, res) => {
     res.setHeader("Content-Type", "application/json");
 
-    const publicKeyB64 = req.get("OAK");
+    const publicKeyB64 = req.get("OAT");
 
     const email = req.body.email;
     const password = req.body.password;
@@ -55,7 +55,7 @@ router.post("/", async (req, res) => {
             res.status(400).json({ response: err });
             return;
         }
-        res.setHeader("OAK", newToken)
+        res.setHeader("OAT", newToken)
         res.status(200).json({ response: "API token successfully initialised" });
     } catch (err) {
         console.error(err);

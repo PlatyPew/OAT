@@ -1,6 +1,6 @@
 const { InventoryInfoModel } = require("../models/MarketModel");
 
-const oak = require("./oak");
+const oat = require("./oat");
 
 /**
  * Return inventory quantities from MongoDB 
@@ -20,7 +20,7 @@ const getInventory = async () => {
  * @returns {object} - Shopping cart data
  */
 const getCart = (token) => {
-    return oak.getSessionData(token).cart;
+    return oat.getSessionData(token).cart;
 };
 
 /**

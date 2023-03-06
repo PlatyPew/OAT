@@ -1,7 +1,7 @@
 const { AccountInfoModel } = require("../models/AccountModel");
 
-// OAK Module
-const oak = require("./oak");
+// OAT Module
+const oat = require("./oat");
 
 /**
  * Insert values into client's account token and public key UID
@@ -15,9 +15,9 @@ const updateByAccount = async (email, publicKeyB64) => {
 
     if (!acc) return { err: "Account not found", newToken: undefined };
 
-    // OAK init function
+    // OAT init function
     try {
-        const token = oak.initToken(
+        const token = oat.initToken(
             publicKeyB64,
             { admin: acc.admin, cart: {} },
             async (keyId, nextKey) => {
@@ -36,14 +36,14 @@ const updateByAccount = async (email, publicKeyB64) => {
 };
 
 /**
- * Perform OAK rollToken matching MongoDB Document's nextApiKey
+ * Perform OAT rollToken matching MongoDB Document's nextApiKey
  * @param {function} - Function to fetch the nextApiKey from MongoDB using GPG Public Key ID
  * @param {string} token - Token supplied by client in HTTP Request Header
  * @param {object} - Metadata new fields
  * @param {function} - Function to replace prevApiKey with current API Key and nextApiKey with new API Key
  *
  * If rollToken-nextApiKey fails,
- * Perform OAK rollToken matching MongoDB Document's prevApiKey
+ * Perform OAT rollToken matching MongoDB Document's prevApiKey
  * @param {function} - Function to fetch the prevApiKey from MongoDB using GPG Public Key ID
  * @param {string} token - Token supplied by client in HTTP Request Header
  * @param {object} - Metadata new fields
@@ -56,7 +56,7 @@ const updateByAccount = async (email, publicKeyB64) => {
  * @returns {promise} Base64 encoded API token, boolean value for token validity
  */
 const updateByToken = async (token, newfields) => {
-    const tokenFromNextApiKey = await oak.rollToken(
+    const tokenFromNextApiKey = await oat.rollToken(
         async (keyId) => {
             // Find next token value in database
             const acc = await AccountInfoModel.findOne({ gpgKeyId: keyId });
@@ -76,14 +76,14 @@ const updateByToken = async (token, newfields) => {
     if (tokenFromNextApiKey) return { err: undefined, newToken: tokenFromNextApiKey, valid: true };
 
     // If current token != nextApiKey in database, check if current token == prevApiKey
-    const tokenFromPrevApiKey = await oak.rollToken(
+    const tokenFromPrevApiKey = await oat.rollToken(
         async (keyId) => {
             // Find next token value in database
             const acc = await AccountInfoModel.findOne({ gpgKeyId: keyId });
             return Buffer.from(acc.prevApiKey);
         },
         token,
-        oak.getSessionData(token),
+        oat.getSessionData(token),
         async (keyId, nextApiKey) => {
             const acc = await AccountInfoModel.findOne({ gpgKeyId: keyId });
             // Store next token in nextApiKey
@@ -99,7 +99,7 @@ const updateByToken = async (token, newfields) => {
 };
 
 const validCurrentToken = async (token) => {
-    const result = await oak.authToken(async (keyId) => {
+    const result = await oat.authToken(async (keyId) => {
         // Find next token value in database
         const acc = await AccountInfoModel.findOne({ gpgKeyId: keyId });
         return Buffer.from(acc.nextApiKey);

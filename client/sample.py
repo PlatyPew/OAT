@@ -122,6 +122,25 @@ def buy_from_cart():
     raise Exception(res.text)
 
 
+def set_store_inventory(store={}):
+    res = requests.post(f"{URL}/api/market/store/restock",
+                        headers={"OAK": _gen_token()},
+                        data=store,
+                        verify=False)
+
+    token = res.headers.get("OAK")
+    if not token is None:
+        _update_token(token)
+
+    if res.status_code == 200:
+        return res.text
+
+    if res.status_code == 204:
+        return None
+
+    raise Exception(res.text)
+
+
 def main():
     global curr_token
     _get_token()

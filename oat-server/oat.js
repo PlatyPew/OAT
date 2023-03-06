@@ -2,17 +2,17 @@ const crypto = require("crypto");
 const gpg = require("./gpg");
 
 /**
- * gets oak password from environment variable
+ * gets oat password from environment variable
  *
- * @returns {string} oak password to use
+ * @returns {string} oat password to use
  */
-const _oakPass = () => {
-    const oakPass = process.env.OAK_PASS;
+const _oatPass = () => {
+    const oatPass = process.env.OAT_PASS;
 
-    if (oakPass === undefined) throw new Error("Environment variable OAK_PASS is not set");
-    if (oakPass.length !== 32) throw new Error("Password shoud be at 32 bytes long");
+    if (oatPass === undefined) throw new Error("Environment variable OAT_PASS is not set");
+    if (oatPass.length !== 32) throw new Error("Password shoud be at 32 bytes long");
 
-    return oakPass;
+    return oatPass;
 };
 
 /**
@@ -90,7 +90,7 @@ const _signSessionData = (key, fields) => {
     const fieldBytes = Buffer.from(JSON.stringify(fields));
 
     const hmacB64 = crypto
-        .createHmac("sha3-512", _oakPass())
+        .createHmac("sha3-512", _oatPass())
         .update(fieldBytes)
         .update(key)
         .digest("base64");
@@ -112,7 +112,7 @@ const _verifySessionData = (key, fields, hmac) => {
     const fieldBytes = Buffer.from(JSON.stringify(fields));
 
     const calculatedHmac = crypto
-        .createHmac("sha3-512", _oakPass())
+        .createHmac("sha3-512", _oatPass())
         .update(fieldBytes)
         .update(key)
         .digest();
@@ -121,7 +121,7 @@ const _verifySessionData = (key, fields, hmac) => {
 };
 
 /**
- * initialise the initial oak key
+ * initialise the initial oat key
  *
  * @param {string} pubKeyB64 - public key in base64
  * @param {json} newfields - new session data fields to update
@@ -133,7 +133,7 @@ const initToken = (pubKeyB64, newFields, cb) => {
     const keyId = gpg.importKey(pubKeyBytes);
 
     const rng = _genRNG();
-    const nextApiKey = crypto.createHmac("sha3-512", _oakPass()).update(rng).digest();
+    const nextApiKey = crypto.createHmac("sha3-512", _oatPass()).update(rng).digest();
     cb(keyId, nextApiKey);
 
     const encNextApiKeyB64 = gpg.encrypt(keyId, nextApiKey).toString("base64");

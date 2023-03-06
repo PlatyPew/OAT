@@ -141,7 +141,7 @@ const genKey = (keyEmail, password) => {
         "--passphrase",
         password,
         "--quick-gen-key",
-        `OAK <${keyEmail}>`,
+        `OAT <${keyEmail}>`,
         "default",
         "default",
     ]);

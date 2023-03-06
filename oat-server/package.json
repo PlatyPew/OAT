@@ -1,0 +1,19 @@
+{
+  "name": "oat",
+  "version": "1.0.0",
+  "description": "PoC rolling API key",
+  "main": "oat.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PlatyPew/OAT.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/PlatyPew/OAT/issues"
+  },
+  "homepage": "https://github.com/PlatyPew/OAT#readme",
+  "dependencies": {
+    "command-exists": "^1.2.9"
+  }
+}

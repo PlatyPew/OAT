@@ -5,7 +5,7 @@ services:
     build: .
     container_name: restapi
     environment:
-      - OAK_PASS=${OAK_PASS}
+      - OAT_PASS=${OAT_PASS}
     restart: always
     networks:
       - db
@@ -42,4 +42,4 @@ services:
 
 networks:
   db:
-    name: oak_db_local
+    name: oat_db_local

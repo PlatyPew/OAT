@@ -1,6 +1,6 @@
 <html>
     <head>
-        <title>OAK Market</title>
+        <title>OAT Market</title>
         <style>
             h3,
             p {
@@ -14,7 +14,7 @@
     </head>
     <body>
         <header>
-            <h1>OAK Amazing Market REST-API</h1>
+            <h1>OAT Amazing Market REST-API</h1>
         </header>
 
         <section>
@@ -22,7 +22,7 @@
             <p>List all items in the store and returns as JSON Object</p>
             <code> GET /api/market/store/get </code>
             <br />
-            <code> OAK: OAK_TOKEN </code>
+            <code> OAT: OAT_TOKEN </code>
             <br />
             <code> { "response": Object } </code>
         </section>
@@ -32,7 +32,7 @@
             <p>List all items in the cart and returns as JSON Object</p>
             <code> GET /api/market/cart/get </code>
             <br />
-            <code> OAK: OAK_TOKEN </code>
+            <code> OAT: OAT_TOKEN </code>
             <br />
             <code> { "response": Object } </code>
         </section>
@@ -42,7 +42,7 @@
             <p>Set the amount in the cart and return cart as JSON Object</p>
             <code> POST /api/market/cart/set </code>
             <br />
-            <code> OAK: OAK_TOKEN </code>
+            <code> OAT: OAT_TOKEN </code>
             <br />
             <code> { ...items: item_number } </code>
             <br />
@@ -54,7 +54,7 @@
             <p>Buy from items in cart and return JSON object of items bought</p>
             <code> POST /api/market/store/buy </code>
             <br />
-            <code> OAK: OAK_TOKEN </code>
+            <code> OAT: OAT_TOKEN </code>
             <br />
             <code> { "response": Object } </code>
         </section>
@@ -64,7 +64,7 @@
             <p>Set the amount in the inventory and return as JSON Object</p>
             <code> POST /api/market/store/restock </code>
             <br />
-            <code> OAK: OAK_TOKEN </code>
+            <code> OAT: OAT_TOKEN </code>
             <br />
             <code> { ...items: item_number } </code>
             <br />

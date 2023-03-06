@@ -5,7 +5,7 @@ import requests
 
 import oak
 
-URL = "https://localhost:3000"
+URL = "https://www.charming-brahmagupta.cloud"
 
 OAK_FILE = "./token.oak"
 
@@ -29,8 +29,7 @@ def _get_token():
                         data={
                             "email": EMAIL,
                             "password": hashlib.sha3_512(PASSWORD.encode()).hexdigest()
-                        },
-                        verify=False)
+                        })
 
     if res.status_code != 200:
         raise Exception(res.text)
@@ -56,7 +55,7 @@ def _gen_token():
 
 
 def get_store_inventory():
-    res = requests.get(f"{URL}/api/market/store/get", headers={"OAK": _gen_token()}, verify=False)
+    res = requests.get(f"{URL}/api/market/store/get", headers={"OAK": _gen_token()})
 
     token = res.headers.get("OAK")
     if not token is None:
@@ -72,7 +71,7 @@ def get_store_inventory():
 
 
 def get_cart_inventory():
-    res = requests.get(f"{URL}/api/market/cart/get", headers={"OAK": _gen_token()}, verify=False)
+    res = requests.get(f"{URL}/api/market/cart/get", headers={"OAK": _gen_token()})
 
     token = res.headers.get("OAK")
     if not token is None:
@@ -107,7 +106,7 @@ def set_cart_inventory(cart={}):
 
 
 def buy_from_cart():
-    res = requests.post(f"{URL}/api/market/store/buy", headers={"OAK": _gen_token()}, verify=False)
+    res = requests.post(f"{URL}/api/market/store/buy", headers={"OAK": _gen_token()})
 
     token = res.headers.get("OAK")
     if not token is None:

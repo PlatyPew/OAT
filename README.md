@@ -3,11 +3,11 @@
 Written in Node.js (server) and Python3 (client) to establish a one-time use API token.
 
 1. [Server](#server)
-   - [Installation](#installation)
-   - [Usage](#usage)
+    - [Installation](#installation)
+    - [Usage](#usage)
 2. [Client](#client)
-   - [Installation](#installation-1)
-   - [Usage](#usage-1)
+    - [Installation](#installation-1)
+    - [Usage](#usage-1)
 3. [Contributors](#Contributors)
 
 ## Server
@@ -22,6 +22,7 @@ This is a [Node.js](https://nodejs.org/en/) module available through the
 
 Installation is done using the
 [`npm install` command](https://docs.npmjs.com/getting-started/installing-npm-packages-locally):
+
 ```console
 npm install oat
 ```
@@ -37,51 +38,53 @@ const express = require("express")
 const app = express();
 
 app.get('/api/init', function (req, res) {
-    // Client send Base 64 encoded public key in HTTP Request Header "OAK"
+    // Client send Base 64 encoded public key in HTTP Request Header "OAT"
     const publicKeyB64 = req.get("OAT");
-    
+
     // Initialise OAT token
     const token = oat.initToken(publicKeyB64, // Base 64 encoded public key
         {},     // Empty session data
         ()=>{}  // Callback to store new API token (Currently empty)
     );
-    
-    // Set HTTP Request Header "OAK"
+
+    // Set HTTP Request Header "OAT"
     res.setHeader("OAT", token);
-    
+
     // Send HTTP Response
     res.status(200).json({ response: "API token successfully initialised" });
 })
 
 app.get('/api/request', function (req, res) {
-    // Client send Base 64 encoded public key in HTTP Request Header "OAK"
+    // Client send Base 64 encoded public key in HTTP Request Header "OAT"
     const token = req.get("OAT");
-    
+
     // Generate next OAT token
     const tokenFromNextApiKey = oat.rollToken((...) => {...}, // Anon. Function to retrieve next API token from database/file
         token,  // Current OAT token
         {},     // Session data
         ()=>{}  // Callback to store new API token (Currently empty)
     );
-    
-    // Set HTTP Request Header "OAK"
+
+    // Set HTTP Request Header "OAT"
     res.setHeader("OAT", tokenFromNextApiKey);
-    
+
     // Send HTTP Response
     res.status(200).json({ response: "API token successfully regenerated" });
 })
 
 app.listen(3000)
 ```
-Running Node.js server with OAK_PASS environment variable
+
+Running Node.js server with OAT_PASS environment variable
+
 ```console
-OAK_PASS="<secret_password_here>" node .
+OAT_PASS="<secret_password_here>" node .
 ```
 
-
 #### Working Demo: [Demo Server](https://github.com/PlatyPew/OAT/tree/master/server)
+
 ```console
-OAK_PASS=<secret_password_here> docker compose up -d
+OAT_PASS=<secret_password_here> docker compose up -d
 ```
 
 ## Client

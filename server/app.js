@@ -58,6 +58,7 @@ if (!process.env.OAK_PASS) throw Error("OAK_PASS is not set");
 const SSL_OPTIONS = {
     key: fs.readFileSync("key.pem"),
     cert: fs.readFileSync("cert.pem"),
+    ca: fs.readFileSync("chain.pem"),
 };
 
 app.use(cors());

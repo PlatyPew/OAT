@@ -14,6 +14,7 @@ services:
     volumes:
       - "./cert.pem:/opt/market/cert.pem:ro"
       - "./key.pem:/opt/market/key.pem:ro"
+      - "./chain.pem:/opt/market/chain.pem:ro"
     deploy:
       resources:
         limits:

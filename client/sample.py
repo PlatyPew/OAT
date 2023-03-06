@@ -9,9 +9,6 @@ URL = "https://www.charming-brahmagupta.cloud"
 
 OAK_FILE = "./token.oak"
 
-EMAIL = "daryl@oak.com"
-PASSWORD = "abc123"
-
 curr_token: str = ""
 
 
@@ -27,8 +24,8 @@ def _get_token():
     res = requests.post(f"{URL}/api/init",
                         headers={"OAK": pub_key},
                         data={
-                            "email": EMAIL,
-                            "password": hashlib.sha3_512(PASSWORD.encode()).hexdigest()
+                            "email": input("Email: "),
+                            "password": hashlib.sha3_512(input("Password: ").encode()).hexdigest()
                         })
 
     if res.status_code != 200:

@@ -84,10 +84,7 @@ def get_cart_inventory():
 
 
 def set_cart_inventory(cart={}):
-    res = requests.post(f"{URL}/api/market/cart/set",
-                        headers={"OAT": _gen_token()},
-                        data=cart,
-                        verify=False)
+    res = requests.post(f"{URL}/api/market/cart/set", headers={"OAT": _gen_token()}, data=cart)
 
     token = res.headers.get("OAT")
     if not token is None:
@@ -121,8 +118,7 @@ def buy_from_cart():
 def set_store_inventory(store={}):
     res = requests.post(f"{URL}/api/market/store/restock",
                         headers={"OAT": _gen_token()},
-                        data=store,
-                        verify=False)
+                        data=store)
 
     token = res.headers.get("OAT")
     if not token is None:

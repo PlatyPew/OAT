@@ -1,7 +1,7 @@
 from base64 import b64encode, b64decode
 from json import loads
 
-from oak import gpg
+from oat import gpg
 
 
 def _strip_key_id(fields: dict) -> dict:

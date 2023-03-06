@@ -3,26 +3,26 @@ from os import path, environ
 import hashlib
 import requests
 
-import oak
+import oat
 
 URL = "https://www.charming-brahmagupta.cloud"
 
-OAK_FILE = "./token.oak"
+OAT_FILE = "./token.oat"
 
 curr_token: str = ""
 
 
 def _get_token():
     global curr_token
-    if path.exists(OAK_FILE):
-        with open(OAK_FILE, "r") as f:
+    if path.exists(OAT_FILE):
+        with open(OAT_FILE, "r") as f:
             curr_token = f.read()
         return
 
-    pub_key = oak.init_token(environ["KEY_PASS"])
+    pub_key = oat.init_token(environ["KEY_PASS"])
 
     res = requests.post(f"{URL}/api/init",
-                        headers={"OAK": pub_key},
+                        headers={"OAT": pub_key},
                         data={
                             "email": input("Email: "),
                             "password": hashlib.sha3_512(input("Password: ").encode()).hexdigest()
@@ -31,7 +31,7 @@ def _get_token():
     if res.status_code != 200:
         raise Exception(res.text)
 
-    token = res.headers.get("OAK")
+    token = res.headers.get("OAT")
     if not token is None:
         _update_token(token)
 
@@ -40,21 +40,21 @@ def _update_token(token):
     global curr_token
     curr_token = token
 
-    with open(OAK_FILE, "w") as f:
+    with open(OAT_FILE, "w") as f:
         f.write(token)
 
 
 def _gen_token():
     global curr_token
-    rolled_token = oak.roll_token(curr_token.encode())
+    rolled_token = oat.roll_token(curr_token.encode())
 
     return rolled_token.decode()
 
 
 def get_store_inventory():
-    res = requests.get(f"{URL}/api/market/store/get", headers={"OAK": _gen_token()})
+    res = requests.get(f"{URL}/api/market/store/get", headers={"OAT": _gen_token()})
 
-    token = res.headers.get("OAK")
+    token = res.headers.get("OAT")
     if not token is None:
         _update_token(token)
 
@@ -68,9 +68,9 @@ def get_store_inventory():
 
 
 def get_cart_inventory():
-    res = requests.get(f"{URL}/api/market/cart/get", headers={"OAK": _gen_token()})
+    res = requests.get(f"{URL}/api/market/cart/get", headers={"OAT": _gen_token()})
 
-    token = res.headers.get("OAK")
+    token = res.headers.get("OAT")
     if not token is None:
         _update_token(token)
 
@@ -85,11 +85,11 @@ def get_cart_inventory():
 
 def set_cart_inventory(cart={}):
     res = requests.post(f"{URL}/api/market/cart/set",
-                        headers={"OAK": _gen_token()},
+                        headers={"OAT": _gen_token()},
                         data=cart,
                         verify=False)
 
-    token = res.headers.get("OAK")
+    token = res.headers.get("OAT")
     if not token is None:
         _update_token(token)
 
@@ -103,9 +103,9 @@ def set_cart_inventory(cart={}):
 
 
 def buy_from_cart():
-    res = requests.post(f"{URL}/api/market/store/buy", headers={"OAK": _gen_token()})
+    res = requests.post(f"{URL}/api/market/store/buy", headers={"OAT": _gen_token()})
 
-    token = res.headers.get("OAK")
+    token = res.headers.get("OAT")
     if not token is None:
         _update_token(token)
 
@@ -120,11 +120,11 @@ def buy_from_cart():
 
 def set_store_inventory(store={}):
     res = requests.post(f"{URL}/api/market/store/restock",
-                        headers={"OAK": _gen_token()},
+                        headers={"OAT": _gen_token()},
                         data=store,
                         verify=False)
 
-    token = res.headers.get("OAK")
+    token = res.headers.get("OAT")
     if not token is None:
         _update_token(token)
 

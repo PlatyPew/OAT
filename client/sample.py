@@ -58,27 +58,33 @@ def _gen_token():
 def get_store_inventory():
     res = requests.get(f"{URL}/api/market/store/get", headers={"OAK": _gen_token()}, verify=False)
 
-    if res.status_code != 200 and res.status_code != 204:
-        raise Exception(res.text)
-
     token = res.headers.get("OAK")
     if not token is None:
         _update_token(token)
 
-    return res.text
+    if res.status_code == 200:
+        return res.text
+
+    if res.status_code == 204:
+        return None
+
+    raise Exception(res.text)
 
 
 def get_cart_inventory():
     res = requests.get(f"{URL}/api/market/cart/get", headers={"OAK": _gen_token()}, verify=False)
 
-    if res.status_code != 200 and res.status_code != 204:
-        raise Exception(res.text)
-
     token = res.headers.get("OAK")
     if not token is None:
         _update_token(token)
 
-    return res.text
+    if res.status_code == 200:
+        return res.text
+
+    if res.status_code == 204:
+        return None
+
+    raise Exception(res.text)
 
 
 def set_cart_inventory(cart={}):
@@ -87,27 +93,33 @@ def set_cart_inventory(cart={}):
                         data=cart,
                         verify=False)
 
-    if res.status_code != 200:
-        raise Exception(res.text)
-
     token = res.headers.get("OAK")
     if not token is None:
         _update_token(token)
 
-    return res.text
+    if res.status_code == 200:
+        return res.text
+
+    if res.status_code == 204:
+        return None
+
+    raise Exception(res.text)
 
 
 def buy_from_cart():
     res = requests.post(f"{URL}/api/market/store/buy", headers={"OAK": _gen_token()}, verify=False)
 
-    if res.status_code != 200 and res.status_code != 204:
-        raise Exception(res.text)
-
     token = res.headers.get("OAK")
     if not token is None:
         _update_token(token)
 
-    return res.text
+    if res.status_code == 200:
+        return res.text
+
+    if res.status_code == 204:
+        return None
+
+    raise Exception(res.text)
 
 
 def main():

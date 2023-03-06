@@ -17,6 +17,7 @@ const setCart = async (cart) => {
 
     try {
         Object.keys(cart).forEach((item) => {
+            cart[item] = parseInt(cart[item]);
             if (cart[item] <= 0) throw "Not more than 0";
             if (inventory[item] < cart[item]) throw "Something";
         });

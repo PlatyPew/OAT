@@ -13,7 +13,15 @@ services:
       - "3000:3000"
     volumes:
       - "./cert.pem:/opt/market/cert.pem:ro"
-      - "./key.pem:/opt/market/key.pem:rw"
+      - "./key.pem:/opt/market/key.pem:ro"
+      - "./chain.pem:/opt/market/chain.pem:ro"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+      restart_policy:
+          condition: always
+          delay: 3s
 
 
   database:
@@ -22,6 +30,13 @@ services:
     restart: always
     networks:
       - db
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+      restart_policy:
+          condition: always
+          delay: 3s
 
 networks:
   db:

@@ -30,7 +30,25 @@ const MONGO = "mongodb://database/oak";
                 admin: true,
             },
             {
+                email: "alford@oak.com",
+                password:
+                    "a95a503d26a8d0282f213b7b692057a10f74ac11b9e686755498765900acbf54a88affd2ad28538752084814332e965a88b1d1c8e070f4423b9f150cf6174448",
+                admin: false,
+            },
+            {
                 email: "daryl@oak.com",
+                password:
+                    "a95a503d26a8d0282f213b7b692057a10f74ac11b9e686755498765900acbf54a88affd2ad28538752084814332e965a88b1d1c8e070f4423b9f150cf6174448",
+                admin: false,
+            },
+            {
+                email: "joshua@oak.com",
+                password:
+                    "a95a503d26a8d0282f213b7b692057a10f74ac11b9e686755498765900acbf54a88affd2ad28538752084814332e965a88b1d1c8e070f4423b9f150cf6174448",
+                admin: false,
+            },
+            {
+                email: "kunfeng@oak.com",
                 password:
                     "a95a503d26a8d0282f213b7b692057a10f74ac11b9e686755498765900acbf54a88affd2ad28538752084814332e965a88b1d1c8e070f4423b9f150cf6174448",
                 admin: false,
@@ -58,11 +76,12 @@ if (!process.env.OAK_PASS) throw Error("OAK_PASS is not set");
 const SSL_OPTIONS = {
     key: fs.readFileSync("key.pem"),
     cert: fs.readFileSync("cert.pem"),
+    ca: fs.readFileSync("chain.pem"),
 };
 
 app.use(cors());
 
-app.use(bodyParser.urlencoded({ extended: false, limit: "8mb" }));
+app.use(bodyParser.urlencoded({ extended: true, limit: "8mb" }));
 app.use(bodyParser.json({ limit: "8mb" }));
 
 // User Credential Authentication + Generate IV

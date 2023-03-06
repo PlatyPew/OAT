@@ -157,7 +157,10 @@ router.post("/store/restock", async (req, res) => {
         return;
     }
 
-    const newInventory = req.body;
+    let newInventory = req.body;
+    Object.keys(newInventory).forEach((item) => {
+        newInventory[item] = parseInt(newInventory[item]);
+    });
 
     const token = req.get("OAK");
     if (token === undefined) {

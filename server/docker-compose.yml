@@ -10,7 +10,7 @@ services:
     networks:
       - db
     ports:
-      - "3000:3000"
+      - "443:3000"
     volumes:
       - "./cert.pem:/opt/market/cert.pem:ro"
       - "./key.pem:/opt/market/key.pem:ro"

@@ -2,16 +2,33 @@ const { InventoryInfoModel } = require("../models/MarketModel");
 
 const oak = require("./oak");
 
+/**
+ * Return inventory quantities from MongoDB 
+ * 
+ * @returns {object} - Inventory quantities
+ */
 const getInventory = async () => {
     const inventory = (await InventoryInfoModel.find())[0].toObject();
     delete inventory._id;
     return inventory;
 };
 
+/**
+ * Return shopping cart quantities from Token session data
+ * 
+ * @param {string} token - Base64 encoded API token
+ * @returns {object} - Shopping cart data
+ */
 const getCart = (token) => {
     return oak.getSessionData(token).cart;
 };
 
+/**
+ * Set quantities of items in shopping cart session data
+ * 
+ * @param {object} cart - Object containing quantities of items
+ * @returns {object|null} - cart object containing new quantities of items or null
+ */
 const setCart = async (cart) => {
     const inventory = (await InventoryInfoModel.find())[0];
 
@@ -28,6 +45,11 @@ const setCart = async (cart) => {
     }
 };
 
+/**
+ * Deduct quantities of items in shopping cart session data from inventory
+ * 
+ * @param {object} cart - Object containing quantities of items
+ */
 const buyItems = async (cart) => {
     const inventory = (await InventoryInfoModel.find())[0];
 
@@ -37,6 +59,12 @@ const buyItems = async (cart) => {
     inventory.save();
 };
 
+/**
+ * Set quantities of items in newInventory for MongoDB inventory data
+ * 
+ * @param {object} newInventory - Object containing new quantities of items
+ * @returns {boolean} - True: Quantities updated successfully, False: Error occurred when updating
+ */
 const setInventory = async (newInventory) => {
     const inventory = (await InventoryInfoModel.find())[0];
 

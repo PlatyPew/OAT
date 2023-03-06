@@ -9,18 +9,18 @@ const { updateByAccount } = require("../utils/update");
 const router = express.Router();
 
 /**
- * <url>/api/init
+ * <url>/src/routes/init
  * Authenticate email:password
  *
  * update.updateByAccount():
  * Verify account
  * Call oak.js initToken()
  *
+ * @req.header {string} OAK - Client GPG public key
  * @req.body {string} email - Account email
  * @req.body {string} password - Account password
- * @req.body {string} publickey - Client GPG public key
  * @res.header {string} OAK - Base64 encoded API token
- * @res.send {boolean, <string>} - Boolean value to indicate result, error message if error occurred
+ * @res.json {string} - Send boolean value to indicate result, response message if error occurred
  */
 router.post("/", async (req, res) => {
     res.setHeader("Content-Type", "application/json");

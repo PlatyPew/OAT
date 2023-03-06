@@ -62,7 +62,7 @@ const SSL_OPTIONS = {
 
 app.use(cors());
 
-app.use(bodyParser.urlencoded({ extended: false, limit: "8mb" }));
+app.use(bodyParser.urlencoded({ extended: true, limit: "8mb" }));
 app.use(bodyParser.json({ limit: "8mb" }));
 
 // User Credential Authentication + Generate IV

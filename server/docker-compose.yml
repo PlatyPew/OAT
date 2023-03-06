@@ -15,6 +15,8 @@ services:
       - "./cert.pem:/opt/market/cert.pem:ro"
       - "./key.pem:/opt/market/key.pem:ro"
       - "./chain.pem:/opt/market/chain.pem:ro"
+    depends_on:
+      - database
     deploy:
       resources:
         limits:

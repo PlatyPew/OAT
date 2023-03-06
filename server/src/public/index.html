@@ -1,0 +1,74 @@
+<html>
+    <head>
+        <title>OAK Market</title>
+        <style>
+            h3,
+            p {
+                margin-top: 5px;
+                margin-bottom: 5px;
+            }
+            section {
+                margin-bottom: 30px;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h1>OAK Amazing Market REST-API</h1>
+        </header>
+
+        <section>
+            <h3>List items in store</h3>
+            <p>List all items in the store and returns as JSON Object</p>
+            <code> GET /api/market/store/get </code>
+            <br />
+            <code> OAK: OAK_TOKEN </code>
+            <br />
+            <code> { "response": Object } </code>
+        </section>
+
+        <section>
+            <h3>List items in cart</h3>
+            <p>List all items in the cart and returns as JSON Object</p>
+            <code> GET /api/market/cart/get </code>
+            <br />
+            <code> OAK: OAK_TOKEN </code>
+            <br />
+            <code> { "response": Object } </code>
+        </section>
+
+        <section>
+            <h3>Set items in cart</h3>
+            <p>Set the amount in the cart and return cart as JSON Object</p>
+            <code> GET /api/market/cart/set </code>
+            <br />
+            <code> OAK: OAK_TOKEN </code>
+            <br />
+            <code> { ...items: item_number } </code>
+            <br />
+            <code> { "response": Object } </code>
+        </section>
+
+        <section>
+            <h3>Buy items in cart</h3>
+            <p>Buy from items in cart and return JSON object of items bought</p>
+            <code> GET /api/market/store/buy </code>
+            <br />
+            <code> OAK: OAK_TOKEN </code>
+            <br />
+            <code> { "response": Object } </code>
+        </section>
+
+        <section>
+            <h3>Restock items in store</h3>
+            <p>Set the amount in the inventory and return as JSON Object</p>
+            <code> GET /api/market/store/restock </code>
+            <br />
+            <code> OAK: OAK_TOKEN </code>
+            <br />
+            <code> { ...items: item_number } </code>
+            <br />
+            <code> { "response": Object } </code>
+        </section>
+    </body>
+</html>

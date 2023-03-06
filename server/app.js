@@ -4,6 +4,7 @@ const app = express();
 
 const https = require("https");
 const fs = require("fs");
+const path = require("path");
 
 // Imports for express
 const bodyParser = require("body-parser");
@@ -83,6 +84,10 @@ app.use(cors());
 
 app.use(bodyParser.urlencoded({ extended: true, limit: "8mb" }));
 app.use(bodyParser.json({ limit: "8mb" }));
+
+app.get("/", (_, res) => {
+    res.sendFile(path.join(__dirname, "/src/public/index.html"));
+});
 
 // User Credential Authentication + Generate IV
 const auth = require("./src/routes/init");

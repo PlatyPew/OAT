@@ -183,8 +183,17 @@ def gen_key(key_email: str, password: str, options: list = []) -> str:
 
     _, stderr = process.communicate()
 
-    if process.wait() != 0:
+    from re import findall
+    if process.wait() == 0:
+        return findall('''/([A-F0-9]{40})\.''', stderr.decode())[0]
+
+    if not b"already exists" in stderr:
         raise Exception(stderr)
 
-    from re import findall
-    return findall('''/([A-F0-9]{40})\.''', stderr.decode())[0]
+    process = subprocess.Popen(["gpg"] + options + ["--list-key"],
+                               stdin=subprocess.PIPE,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+
+    stdout, _ = process.communicate()
+    return findall(f'''\s([A-F0-9]+)\suid\s+\[ultimate\] OAT <{key_email}>''', stdout.decode())[0]

@@ -42,9 +42,10 @@ app.get('/api/init', function (req, res) {
     const publicKeyB64 = req.get("OAT");
 
     // Initialise OAT token
-    const token = oat.initToken(publicKeyB64, // Base 64 encoded public key
-        {},     // Empty session data
-        ()=>{}  // Callback to store new API token (Currently empty)
+    const token = oat.initToken(
+        publicKeyB64, // Base 64 encoded public key
+        {},     // Session data
+        (keyId, nextKey) => {}  // Callback to store new key ID and API key
     );
 
     // Set HTTP Request Header "OAT"
@@ -59,14 +60,15 @@ app.get('/api/request', function (req, res) {
     const token = req.get("OAT");
 
     // Generate next OAT token
-    const tokenFromNextApiKey = oat.rollToken((...) => {...}, // Anon. Function to retrieve next API token from database/file
+    const nextToken = oat.rollToken(
+        (keyId) => {...}, // Anon. Function to retrieve next API token from database/file
         token,  // Current OAT token
         {},     // Session data
-        ()=>{}  // Callback to store new API token (Currently empty)
+        (keyId, nextKey) => {}  // Callback to store new key ID and API key
     );
 
     // Set HTTP Request Header "OAT"
-    res.setHeader("OAT", tokenFromNextApiKey);
+    res.setHeader("OAT", nextToken);
 
     // Send HTTP Response
     res.status(200).json({ response: "API token successfully regenerated" });

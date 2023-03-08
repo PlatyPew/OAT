@@ -1,0 +1,17 @@
+{
+    "manifest_version": 3,
+    "name": "OAT",
+    "version": "1.0.1",
+    "description": "OAT Chrome Browser CLient",
+    "action": {
+        "default_popup": "app.html"
+    },
+    "permissions": [
+        "webRequest",
+        "webRequestBlocking"
+    ],
+    "background": {
+        "service_worker": "background.js",
+        "type": "module"
+    }
+  }

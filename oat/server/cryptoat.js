@@ -3,9 +3,6 @@ const crypto = require("crypto");
 const fs = require("fs");
 
 const KEY_STORE = `${process.env.HOME || "HI"}/.oatkeys`;
-const SHARED_KEY_DIR = `${KEY_STORE}/share`;
-const SIGNED_KEY_DIR = `${KEY_STORE}/sign`;
-const TOKEN_KEY_DIR = `${KEY_STORE}/token`;
 
 const OAK_PASS = process.env.OAK_PASS;
 
@@ -14,9 +11,6 @@ const OAK_PASS = process.env.OAK_PASS;
  */
 (() => {
     if (!fs.existsSync(KEY_STORE)) fs.mkdirSync(KEY_STORE);
-    if (!fs.existsSync(SHARED_KEY_DIR)) fs.mkdirSync(SHARED_KEY_DIR);
-    if (!fs.existsSync(SIGNED_KEY_DIR)) fs.mkdirSync(SIGNED_KEY_DIR);
-    if (!fs.existsSync(TOKEN_KEY_DIR)) fs.mkdirSync(TOKEN_KEY_DIR);
 })();
 
 /**
@@ -52,15 +46,59 @@ const verify = (pubKey, signedData) => {
     return { apiKey, domain };
 };
 
-const _getSharedKey = (keyId) => {
+/**
+ * encrypt api key using shared key
+ *
+ * @param {string} clientId - client id of shared key
+ * @param {Buffer} apiKey - api key
+ * @returns {Buffer} encrypted api key
+ */
+const encrypt = (clientId, apiKey) => {
+    const sharedKey = _getSharedKey(clientId);
+
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv("aes-256-gcm", sharedKey, iv);
+    let enc = cipher.update(apiKey);
+    cipher.final();
+
+    return Buffer.concat([iv, enc]);
+};
+
+/**
+ * decrypt api key using shared key
+ *
+ * @param {string} clientId - client id of shared key
+ * @param {Buffer} encApiKey - encrypted api key
+ * @returns {Buffer} decrypted api key
+ */
+const decrypt = (clientId, encApiKey) => {
+    const sharedKey = _getSharedKey(clientId);
+
+    const iv = encApiKey.slice(0, 12);
+    const enc = encApiKey.slice(12);
+    const decipher = crypto.createDecipheriv("aes-256-gcm", sharedKey, iv);
+    let dec = decipher.update(enc);
+
+    return dec;
+};
+
+const _getSharedKey = (clientId) => {
+    if (!fs.existsSync(`${KEY_STORE}/${clientId}`)) {
+        throw new Error("Key directory not found");
+    }
+
     // TODO: decrypt shared key using OAK_PASS
-    const sharedKey = fs.readFileSync(`${SHARED_KEY_DIR}/${keyId}`);
+    const sharedKey = fs.readFileSync(`${KEY_STORE}/${clientId}`);
     return new Uint8Array(sharedKey);
 };
 
-const _setSharedKey = (keyId, sharedKey) => {
+const _setSharedKey = (clientId, sharedKey) => {
+    if (!fs.existsSync(`${KEY_STORE}/${clientId}`)) {
+        fs.mkdirSync(`${KEY_STORE}/${clientId}`);
+    }
+
     // TODO: encrypt shared key using OAK_PASS
-    fs.writeFileSync(`${SHARED_KEY_DIR}/${keyId}`, Buffer.from(sharedKey));
+    fs.writeFileSync(`${KEY_STORE}/${clientId}/shared`, Buffer.from(sharedKey));
 };
 
 /**
@@ -68,8 +106,8 @@ const _setSharedKey = (keyId, sharedKey) => {
  *
  * @param {Uint8Array} theirPubKey - exchanger public key
  * @param {Uint8Array} outPrivKey - own private key
- * @returns {Object} key id and shared key
- *     @param {string} keyId - key id of shared key
+ * @returns {Object} client id and shared key
+ *     @param {string} clientId - client id of shared key
  *     @param {Uint8Array} sharedKey - the shared key
  */
 const genSharedKey = (theirPubKey) => {
@@ -78,11 +116,11 @@ const genSharedKey = (theirPubKey) => {
     const ourPrivKey = serverKeyPair.privateKey;
 
     const sharedKey = sodium.crypto_scalarmult(ourPrivKey, theirPubKey);
-    const keyId = crypto.createHash("sha1").update(sharedKey).digest("hex").toUpperCase();
+    const clientId = crypto.createHash("sha1").update(sharedKey).digest("hex").toUpperCase();
 
-    _setSharedKey(keyId, sharedKey);
+    _setSharedKey(clientId, sharedKey);
 
-    return { keyId, sharedKey, serverPubKey: ourPubKey };
+    return { clientId, sharedKey, serverPubKey: ourPubKey };
 };
 
 (async () => {

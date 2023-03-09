@@ -13,16 +13,26 @@ const OAK_PASS = process.env.OAK_PASS;
     if (!fs.existsSync(KEY_STORE)) fs.mkdirSync(KEY_STORE);
 })();
 
+const _makeKeyStore = (clientId) => {
+    if (!fs.existsSync(`${KEY_STORE}/${clientId}`)) fs.mkdirSync(`${KEY_STORE}/${clientId}`);
+};
+
+const _checkKeyStore = (clientId) => {
+    if (!fs.existsSync(`${KEY_STORE}/${clientId}`)) throw new Error("Key directory not found");
+};
+
 /**
  * signs api key with client private key
  *
- * @param {Uint8Array} privKey - private key
+ * @param {string} clientId - client id of shared key
  * @param {Object} data - api key and domain to sign
  *     @param {Buffer} data.apiKey - the api key to sign
  *     @param {string} data.apiKey - the api key to sign
  * @returns {Buffer} signature and data
  */
-const sign = (privKey, { apiKey, domain }) => {
+const sign = (clientId, { apiKey, domain }) => {
+    const privKey = _getSigningKey(clientId);
+
     const unsignedData = Buffer.concat([apiKey, Buffer.from(domain)]);
     const signature = sodium.crypto_sign(unsignedData, privKey);
 
@@ -32,18 +42,46 @@ const sign = (privKey, { apiKey, domain }) => {
 /**
  * verify api key with client private key
  *
- * @param {Uint8Array} pubKey - public key
+ * @param {string} clientId - client id of shared key
  * @param {Uint8Array} signedData - signature and data
  * @returns {Object} api key and domain
  *     @param {Buffer} apiKey - unsigned api key
  *     @param {string} domain - unsigned domain
  */
-const verify = (pubKey, signedData) => {
+const verify = (clientId, signedData) => {
+    const pubKey = _getVerifyingKey(clientId);
+
     const unsignedData = sodium.crypto_sign_open(signedData, pubKey);
     const apiKey = Buffer.from(unsignedData.slice(0, 64));
     const domain = Buffer.from(unsignedData.slice(64)).toString();
 
     return { apiKey, domain };
+};
+
+const _getSigningKey = (clientId) => {
+    _checkKeyStore(clientId);
+
+    const signingKey = fs.readFileSync(`${KEY_STORE}/${clientId}/signing.key`);
+    return new Uint8Array(signingKey);
+};
+
+const _setSigningKey = (clientId, signingKey) => {
+    _makeKeyStore(clientId);
+
+    fs.writeFileSync(`${KEY_STORE}/${clientId}/signing.key`, Buffer.from(signingKey));
+};
+
+const _getVerifyingKey = (clientId) => {
+    _checkKeyStore(clientId);
+
+    const verifyingKey = fs.readFileSync(`${KEY_STORE}/${clientId}/verifying.key`);
+    return new Uint8Array(verifyingKey);
+};
+
+const _setVerifyingKey = (clientId, verifyingKey) => {
+    _makeKeyStore(clientId);
+
+    fs.writeFileSync(`${KEY_STORE}/${clientId}/verifying.key`, Buffer.from(verifyingKey));
 };
 
 /**
@@ -82,23 +120,35 @@ const decrypt = (clientId, encApiKey) => {
     return dec;
 };
 
-const _getSharedKey = (clientId) => {
-    if (!fs.existsSync(`${KEY_STORE}/${clientId}`)) {
-        throw new Error("Key directory not found");
-    }
+const _encryptKey = (decKey) => {
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv("aes-256-gcm", Buffer.from(OAK_PASS), iv);
+    let enc = cipher.update(decKey);
+    cipher.final();
 
-    // TODO: decrypt shared key using OAK_PASS
-    const sharedKey = fs.readFileSync(`${KEY_STORE}/${clientId}`);
-    return new Uint8Array(sharedKey);
+    return Buffer.concat([iv, enc]);
+};
+
+const _decryptKey = (encKey) => {
+    const iv = encKey.slice(0, 12);
+    const enc = encKey.slice(12);
+    const decipher = crypto.createDecipheriv("aes-256-gcm", Buffer.from(OAK_PASS), iv);
+    let dec = decipher.update(enc);
+
+    return new Uint8Array(dec);
+};
+
+const _getSharedKey = (clientId) => {
+    _checkKeyStore(clientId);
+
+    const sharedEncKey = fs.readFileSync(`${KEY_STORE}/${clientId}/shared.key`);
+    return _decryptKey(sharedEncKey);
 };
 
 const _setSharedKey = (clientId, sharedKey) => {
-    if (!fs.existsSync(`${KEY_STORE}/${clientId}`)) {
-        fs.mkdirSync(`${KEY_STORE}/${clientId}`);
-    }
+    _makeKeyStore(clientId);
 
-    // TODO: encrypt shared key using OAK_PASS
-    fs.writeFileSync(`${KEY_STORE}/${clientId}/shared`, Buffer.from(sharedKey));
+    fs.writeFileSync(`${KEY_STORE}/${clientId}/shared.key`, _encryptKey(sharedKey));
 };
 
 /**
@@ -110,36 +160,60 @@ const _setSharedKey = (clientId, sharedKey) => {
  *     @param {string} clientId - client id of shared key
  *     @param {Uint8Array} sharedKey - the shared key
  */
-const genSharedKey = (theirPubKey) => {
-    const serverKeyPair = sodium.crypto_box_keypair();
-    const ourPubKey = serverKeyPair.publicKey;
-    const ourPrivKey = serverKeyPair.privateKey;
+const _genSharedKey = (theirPubKey, myKeyPair) => {
+    const ourPrivKey = myKeyPair.privateKey;
 
     const sharedKey = sodium.crypto_scalarmult(ourPrivKey, theirPubKey);
     const clientId = crypto.createHash("sha1").update(sharedKey).digest("hex").toUpperCase();
 
     _setSharedKey(clientId, sharedKey);
 
-    return { clientId, sharedKey, serverPubKey: ourPubKey };
+    return clientId;
 };
 
-(async () => {
-    await sodium.ready;
+/**
+ * initiate the client key exchange process by sending box and sign public key
+ *
+ * @param {function} getTheirBoxPubKeyFunc - anon function to get server box public key
+ */
+const initClientKeys = (getTheirBoxPubKeyFunc) => {
+    const myBoxKeyPair = sodium.crypto_box_keypair();
+    const mySignKeyPair = sodium.crypto_sign_keypair();
+    _setSigningKey(clientId, mySignKeyPair.privateKey);
 
-    /* const keypair = sodium.crypto_sign_keypair(); */
-    /* const apiKey = sodium.randombytes_buf(64); */
-    /* const domain = "www.charming-brahmagupta.cloud"; */
-    /**/
-    /* const sig = sign(keypair.privateKey, { apiKey, domain }); */
-    /* console.log(verify(keypair.publicKey, sig)); */
+    const theirBoxPubKey = new Uint8Array(
+        getTheirBoxPubKeyFunc(
+            Buffer.from(myBoxKeyPair.publicKey),
+            Buffer.from(mySignKeyPair.publicKey)
+        )
+    );
 
-    const clientKeyPair = sodium.crypto_box_keypair();
-    const serverKeyPair = sodium.crypto_box_keypair();
+    const clientId = _genSharedKey(theirBoxPubKey, myBoxKeyPair);
+};
 
-    genSharedKey(clientKeyPair.publicKey, serverKeyPair.privateKey);
-})();
+/**
+ * initiate the server key exchange by sending box public key
+ *
+ * @param {Buffer} theirBoxPubKey - client's box public key
+ * @param {Buffer} theirSignPubKey - client's sign public key
+ * @returns {Buffer} server's public box key
+ */
+const initServerKeys = (theirBoxPubKey, theirSignPubKey) => {
+    theirBoxPubKey = new Uint8Array(theirBoxPubKey);
+    theirSignPubKey = new Uint8Array(theirSignPubKey);
+
+    const myBoxKeyPair = sodium.crypto_box_keypair();
+    const clientId = _genSharedKey(theirBoxPubKey, myBoxKeyPair);
+    _setVerifyingKey(clientId, theirSignPubKey);
+
+    return Buffer.from(pubKey);
+};
 
 module.exports = {
     sign: sign,
     verify: verify,
+    encrypt: encrypt,
+    decrypt: decrypt,
+    initClientKeys: initClientKeys,
+    initServerKeys: initServerKeys,
 };

@@ -181,7 +181,6 @@ const _genSharedKey = (theirPubKey, myKeyPair) => {
 const initClientKeys = (getTheirBoxPubKeyFunc) => {
     const myBoxKeyPair = sodium.crypto_box_keypair();
     const mySignKeyPair = sodium.crypto_sign_keypair();
-    _setSigningKey(clientId, mySignKeyPair.privateKey);
 
     const theirBoxPubKey = new Uint8Array(
         getTheirBoxPubKeyFunc(
@@ -191,6 +190,7 @@ const initClientKeys = (getTheirBoxPubKeyFunc) => {
     );
 
     const clientId = _genSharedKey(theirBoxPubKey, myBoxKeyPair);
+    _setSigningKey(clientId, mySignKeyPair.privateKey);
 };
 
 /**
@@ -208,7 +208,7 @@ const initServerKeys = (theirBoxPubKey, theirSignPubKey) => {
     const clientId = _genSharedKey(theirBoxPubKey, myBoxKeyPair);
     _setVerifyingKey(clientId, theirSignPubKey);
 
-    return Buffer.from(pubKey);
+    return Buffer.from(myBoxKeyPair.publicKey);
 };
 
 module.exports = {

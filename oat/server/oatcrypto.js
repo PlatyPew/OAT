@@ -5,12 +5,12 @@ const fs = require("fs");
 const KEY_STORE = `${process.env.HOME || "HI"}/.oatkeys`;
 
 /**
- * creates necessary directories for key storage and initialise OAK_PASS
+ * creates necessary directories for key storage and initialise OAT_PASS
  */
 (() => {
-    if (!process.env.OAK_PASS || process.env.OAK_PASS.length < 16)
-        throw new Error("OAK_PASS should be at least 16 characters long");
-    const OAK_PASS = crypto.createHash("sha3-256").update(process.env.OAK_PASS).digest();
+    if (!process.env.OAT_PASS || process.env.OAT_PASS.length < 16)
+        throw new Error("OAT_PASS should be at least 16 characters long");
+    const OAT_PASS = crypto.createHash("sha3-256").update(process.env.OAT_PASS).digest();
 
     if (!fs.existsSync(KEY_STORE)) fs.mkdirSync(KEY_STORE);
 })();
@@ -157,14 +157,14 @@ const decrypt = (clientId, encApiKey) => {
 };
 
 /**
- * encrypts key using OAK_PASS
+ * encrypts key using OAT_PASS
  *
  * @param {Uint8Array} decKey - unencrypted key
  * @returns {Buffer} encrypted key
  */
 const _encryptKey = (decKey) => {
     const iv = crypto.randomBytes(12);
-    const cipher = crypto.createCipheriv("aes-256-gcm", Buffer.from(OAK_PASS), iv);
+    const cipher = crypto.createCipheriv("aes-256-gcm", Buffer.from(OAT_PASS), iv);
     let enc = cipher.update(decKey);
     cipher.final();
 
@@ -172,7 +172,7 @@ const _encryptKey = (decKey) => {
 };
 
 /**
- * decrypts key using OAK_PASS
+ * decrypts key using OAT_PASS
  *
  * @param {Buffer} encKey - encrypted key
  * @returns {Uint8Array} decrypted key
@@ -180,7 +180,7 @@ const _encryptKey = (decKey) => {
 const _decryptKey = (encKey) => {
     const iv = encKey.slice(0, 12);
     const enc = encKey.slice(12);
-    const decipher = crypto.createDecipheriv("aes-256-gcm", Buffer.from(OAK_PASS), iv);
+    const decipher = crypto.createDecipheriv("aes-256-gcm", Buffer.from(OAT_PASS), iv);
     let dec = decipher.update(enc);
 
     return new Uint8Array(dec);

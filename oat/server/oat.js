@@ -24,7 +24,11 @@ const _setApiKey = (clientId, apiKey) => {
     fs.writeFileSync(`${oatcrypto.KEY_STORE}/${clientId}/api.key`, apiKey);
 };
 
-const _getToken = (clientId) => {};
+const _getToken = (clientId) => {
+    oatcrypto.checkKeyStore();
+
+    return fs.readFileSync(`${oatcrypto.KEY_STORE}/${clientId}/token`);
+};
 
 const _setToken = (clientId, token) => {
     oatcrypto.makeKeyStore();
@@ -65,21 +69,32 @@ const _parseResponseToken = (token) => {
     const clientId = session.slice(32, 64).toString("hex");
     const fields = JSON.parse(session.slice(64));
 
-    const apiKey = oatcrypto.decrypt(clientId, encApiKey);
-
     return {
-        key: { serverBoxPubKey, apiKey },
+        key: { serverBoxPubKey, encApiKey },
         data: { hmac, clientId, fields },
     };
 };
 
+/**
+ * send public keys and store response token
+ *
+ * @param {function} initConn - function that returns response token from server
+ */
 const initTokenClient = (initConn) => {
     oatcrypto.initClientKeys((ourBoxPubKey, ourSignPubKey) => {
         const token = initConn(Buffer.concat([ourBoxPubKey, ourSignPubKey]).toString("base64"));
-        // TODO: Save token response token to filesystem
+        const { data } = _parseResponseToken(token);
+        _setToken(data.clientId, token);
     });
 };
 
+/**
+ * initialise token for client and exchange keys
+ *
+ * @param {string} initialisationToken - initial request token from client
+ * @param {Object} newFields - json data to put in
+ * @returns {string} response token
+ */
 const initTokenServer = (initialisationToken, newFields) => {
     // Passing initialisation token
     initialisationToken = Buffer.from(initialisationToken, "base64");

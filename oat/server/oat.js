@@ -6,7 +6,7 @@ const oatcrypto = require("./oatcrypto");
 /**
  * generates random 256-bits
  *
- * @returns {bytes} 32 random bytes
+ * @returns {Buffer} 32 random bytes
  */
 const _genRNG = () => {
     return crypto.randomBytes(32);
@@ -38,7 +38,13 @@ const _hmacSessionData = (clientId, apiKey, fields) => {
     return hmac;
 };
 
-const initToken = (initialisationToken, newFields) => {
+const initTokenClient = (initConn) => {
+    oatcrypto.initClientKeys((ourBoxPubKey, ourSignPubKey) => {
+        initConn(Buffer.concat([ourBoxPubKey, ourSignPubKey]).toString("base64"));
+    });
+};
+
+const initTokenServer = (initialisationToken, newFields) => {
     // Passing initialisation token
     initialisationToken = Buffer.from(initialisationToken, "base64");
     const clientBoxPubKey = initialisationToken.slice(0, 32);
@@ -68,7 +74,10 @@ const initToken = (initialisationToken, newFields) => {
 };
 
 module.exports = {
+    client: {
+        initToken: initTokenClient,
+    },
     server: {
-        initToken: initToken,
+        initToken: initTokenServer,
     },
 };

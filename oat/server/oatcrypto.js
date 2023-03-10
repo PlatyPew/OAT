@@ -7,13 +7,11 @@ const KEY_STORE = `${process.env.HOME || "HI"}/.oatkeys`;
 /**
  * creates necessary directories for key storage and initialise OAT_PASS
  */
-(() => {
-    if (!process.env.OAT_PASS || process.env.OAT_PASS.length < 16)
-        throw new Error("OAT_PASS should be at least 16 characters long");
-    const OAT_PASS = crypto.createHash("sha3-256").update(process.env.OAT_PASS).digest();
+if (!process.env.OAT_PASS || process.env.OAT_PASS.length < 16)
+    throw new Error("OAT_PASS should be at least 16 characters long");
+const OAT_PASS = crypto.createHash("sha3-256").update(process.env.OAT_PASS).digest();
 
-    if (!fs.existsSync(KEY_STORE)) fs.mkdirSync(KEY_STORE);
-})();
+if (!fs.existsSync(KEY_STORE)) fs.mkdirSync(KEY_STORE);
 
 /**
  * makes directory if it does not exist
@@ -269,6 +267,17 @@ const initServerKeys = (theirBoxPubKey, theirSignPubKey) => {
     return Buffer.from(myBoxKeyPair.publicKey);
 };
 
+/**
+ * list all client ids
+ *
+ */
+const listIds = () => {
+    const files = fs.readdirSync(KEY_STORE, { withFileTypes: true });
+    files.forEach((file) => {
+        if (file.isDirectory()) console.log(file.name);
+    });
+};
+
 module.exports = {
     sign: sign,
     verify: verify,
@@ -276,4 +285,5 @@ module.exports = {
     decrypt: decrypt,
     initClientKeys: initClientKeys,
     initServerKeys: initServerKeys,
+    listIds: listIds,
 };

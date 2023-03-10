@@ -4,21 +4,31 @@ const fs = require("fs");
 
 const KEY_STORE = `${process.env.HOME || "HI"}/.oatkeys`;
 
-if (!process.env.OAK_PASS || process.env.OAK_PASS.length < 16)
-    throw new Error("OAK_PASS should be at least 16 characters long");
-const OAK_PASS = crypto.createHash("sha3-256").update(process.env.OAK_PASS).digest();
-
 /**
- * creates necessary directories for key storage
+ * creates necessary directories for key storage and initialise OAK_PASS
  */
 (() => {
+    if (!process.env.OAK_PASS || process.env.OAK_PASS.length < 16)
+        throw new Error("OAK_PASS should be at least 16 characters long");
+    const OAK_PASS = crypto.createHash("sha3-256").update(process.env.OAK_PASS).digest();
+
     if (!fs.existsSync(KEY_STORE)) fs.mkdirSync(KEY_STORE);
 })();
 
+/**
+ * makes directory if it does not exist
+ *
+ * @param {string} clientId - client id
+ */
 const _makeKeyStore = (clientId) => {
     if (!fs.existsSync(`${KEY_STORE}/${clientId}`)) fs.mkdirSync(`${KEY_STORE}/${clientId}`);
 };
 
+/**
+ * checks if directory exists
+ *
+ * @param {string} clientId - client id
+ */
 const _checkKeyStore = (clientId) => {
     if (!fs.existsSync(`${KEY_STORE}/${clientId}`)) throw new Error("Key directory not found");
 };
@@ -60,6 +70,12 @@ const verify = (clientId, signedData) => {
     return { apiKey, domain };
 };
 
+/**
+ * read and decrypt signing key
+ *
+ * @param {string} clientId - client id
+ * @returns {Uint8Array} signing key
+ */
 const _getSigningKey = (clientId) => {
     _checkKeyStore(clientId);
 
@@ -67,12 +83,24 @@ const _getSigningKey = (clientId) => {
     return new Uint8Array(_decryptKey(signingKey));
 };
 
+/**
+ * encrypts and saves signing key
+ *
+ * @param {string} clientId - client id
+ * @param {Uint8Array} signingKey - signing key
+ */
 const _setSigningKey = (clientId, signingKey) => {
     _makeKeyStore(clientId);
 
     fs.writeFileSync(`${KEY_STORE}/${clientId}/signing.key`, _encryptKey(Buffer.from(signingKey)));
 };
 
+/**
+ * reads verification key
+ *
+ * @param {string} clientId - client id
+ * @returns {Uint8Array} verification key
+ */
 const _getVerifyingKey = (clientId) => {
     _checkKeyStore(clientId);
 
@@ -80,6 +108,12 @@ const _getVerifyingKey = (clientId) => {
     return new Uint8Array(verifyingKey);
 };
 
+/**
+ * saves verification key
+ *
+ * @param {string} clientId - client id
+ * @param {Uint8Array} verifyingKey - verification key
+ */
 const _setVerifyingKey = (clientId, verifyingKey) => {
     _makeKeyStore(clientId);
 
@@ -122,6 +156,12 @@ const decrypt = (clientId, encApiKey) => {
     return dec;
 };
 
+/**
+ * encrypts key using OAK_PASS
+ *
+ * @param {Uint8Array} decKey - unencrypted key
+ * @returns {Buffer} encrypted key
+ */
 const _encryptKey = (decKey) => {
     const iv = crypto.randomBytes(12);
     const cipher = crypto.createCipheriv("aes-256-gcm", Buffer.from(OAK_PASS), iv);
@@ -131,6 +171,12 @@ const _encryptKey = (decKey) => {
     return Buffer.concat([iv, enc]);
 };
 
+/**
+ * decrypts key using OAK_PASS
+ *
+ * @param {Buffer} encKey - encrypted key
+ * @returns {Uint8Array} decrypted key
+ */
 const _decryptKey = (encKey) => {
     const iv = encKey.slice(0, 12);
     const enc = encKey.slice(12);
@@ -140,6 +186,12 @@ const _decryptKey = (encKey) => {
     return new Uint8Array(dec);
 };
 
+/**
+ * gets and decrypts shared key
+ *
+ * @param {string} clientId - client id
+ * @returns {Uint8Array} shared key
+ */
 const _getSharedKey = (clientId) => {
     _checkKeyStore(clientId);
 
@@ -147,6 +199,12 @@ const _getSharedKey = (clientId) => {
     return _decryptKey(sharedEncKey);
 };
 
+/**
+ * encrypts and saves shared key
+ *
+ * @param {string} clientId - client id
+ * @param {Uint8Array} sharedKey - shared key
+ */
 const _setSharedKey = (clientId, sharedKey) => {
     _makeKeyStore(clientId);
 

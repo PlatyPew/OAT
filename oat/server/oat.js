@@ -83,8 +83,10 @@ const _parseResponseToken = (token) => {
 const initTokenClient = (initConn) => {
     oatcrypto.initClientKeys((ourBoxPubKey, ourSignPubKey) => {
         const token = initConn(Buffer.concat([ourBoxPubKey, ourSignPubKey]).toString("base64"));
-        const { data } = _parseResponseToken(token);
+        const { key, data } = _parseResponseToken(token);
         _setToken(data.clientId, token);
+
+        return key.serverBoxPubKey;
     });
 };
 

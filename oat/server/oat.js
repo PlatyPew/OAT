@@ -24,6 +24,14 @@ const _setApiKey = (clientId, apiKey) => {
     fs.writeFileSync(`${oatcrypto.KEY_STORE}/${clientId}/api.key`, apiKey);
 };
 
+const _getToken = (clientId) => {};
+
+const _setToken = (clientId, token) => {
+    oatcrypto.makeKeyStore();
+
+    fs.writeFileSync(`${oatcrypto.KEY_STORE}/${clientId}/token`, token);
+};
+
 const _hmacSessionData = (clientId, apiKey, fields) => {
     const clientIdBytes = Buffer.from(clientId, "hex");
     const fieldBytes = Buffer.from(JSON.stringify(fields));
@@ -38,9 +46,37 @@ const _hmacSessionData = (clientId, apiKey, fields) => {
     return hmac;
 };
 
+const _parseRequestToken = (token) => {};
+
+const _parseResponseToken = (token) => {
+    let [key, session] = token.split("|");
+    key = Buffer.from(key, "base64");
+    session = Buffer.from(session, "base64");
+
+    let serverBoxPubKey = null;
+    let encApiKey = key;
+
+    if (key.length === 76) {
+        serverBoxPubKey = key.slice(0, 32);
+        encApiKey = key.slice(32);
+    }
+
+    const hmac = session.slice(0, 32);
+    const clientId = session.slice(32, 64).toString("hex");
+    const fields = JSON.parse(session.slice(64));
+
+    const apiKey = oatcrypto.decrypt(clientId, encApiKey);
+
+    return {
+        key: { serverBoxPubKey, apiKey },
+        data: { hmac, clientId, fields },
+    };
+};
+
 const initTokenClient = (initConn) => {
     oatcrypto.initClientKeys((ourBoxPubKey, ourSignPubKey) => {
-        initConn(Buffer.concat([ourBoxPubKey, ourSignPubKey]).toString("base64"));
+        const token = initConn(Buffer.concat([ourBoxPubKey, ourSignPubKey]).toString("base64"));
+        // TODO: Save token response token to filesystem
     });
 };
 

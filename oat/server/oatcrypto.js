@@ -77,9 +77,7 @@ const verify = (clientId, signedData) => {
 const _getSigningKey = (clientId) => {
     checkKeyStore(clientId);
 
-    const signingKey = fs.readFileSync(`${KEY_STORE}/${clientId}/signing.key`, {
-        encoding: "binary",
-    });
+    const signingKey = fs.readFileSync(`${KEY_STORE}/${clientId}/signing.key`);
     return new Uint8Array(_decryptKey(signingKey));
 };
 
@@ -92,9 +90,7 @@ const _getSigningKey = (clientId) => {
 const _setSigningKey = (clientId, signingKey) => {
     makeKeyStore(clientId);
 
-    fs.writeFileSync(`${KEY_STORE}/${clientId}/signing.key`, _encryptKey(Buffer.from(signingKey)), {
-        encoding: "binary",
-    });
+    fs.writeFileSync(`${KEY_STORE}/${clientId}/signing.key`, _encryptKey(Buffer.from(signingKey)));
 };
 
 /**
@@ -106,9 +102,7 @@ const _setSigningKey = (clientId, signingKey) => {
 const _getVerifyingKey = (clientId) => {
     checkKeyStore(clientId);
 
-    const verifyingKey = fs.readFileSync(`${KEY_STORE}/${clientId}/verifying.key`, {
-        encoding: "binary",
-    });
+    const verifyingKey = fs.readFileSync(`${KEY_STORE}/${clientId}/verifying.key`);
     return new Uint8Array(verifyingKey);
 };
 
@@ -121,9 +115,7 @@ const _getVerifyingKey = (clientId) => {
 const _setVerifyingKey = (clientId, verifyingKey) => {
     makeKeyStore(clientId);
 
-    fs.writeFileSync(`${KEY_STORE}/${clientId}/verifying.key`, Buffer.from(verifyingKey), {
-        encoding: "binary",
-    });
+    fs.writeFileSync(`${KEY_STORE}/${clientId}/verifying.key`, Buffer.from(verifyingKey));
 };
 
 /**
@@ -201,9 +193,7 @@ const _decryptKey = (encKey) => {
 const _getSharedKey = (clientId) => {
     checkKeyStore(clientId);
 
-    const sharedEncKey = fs.readFileSync(`${KEY_STORE}/${clientId}/shared.key`, {
-        encoding: "binary",
-    });
+    const sharedEncKey = fs.readFileSync(`${KEY_STORE}/${clientId}/shared.key`);
     return _decryptKey(sharedEncKey);
 };
 
@@ -216,9 +206,7 @@ const _getSharedKey = (clientId) => {
 const _setSharedKey = (clientId, sharedKey) => {
     makeKeyStore(clientId);
 
-    fs.writeFileSync(`${KEY_STORE}/${clientId}/shared.key`, _encryptKey(sharedKey), {
-        encoding: "binary",
-    });
+    fs.writeFileSync(`${KEY_STORE}/${clientId}/shared.key`, _encryptKey(sharedKey));
 };
 
 /**

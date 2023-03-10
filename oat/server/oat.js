@@ -25,13 +25,13 @@ const _setApiKey = (clientId, apiKey) => {
 };
 
 const _getToken = (clientId) => {
-    oatcrypto.checkKeyStore();
+    oatcrypto.checkKeyStore(clientId);
 
     return fs.readFileSync(`${oatcrypto.KEY_STORE}/${clientId}/token`);
 };
 
 const _setToken = (clientId, token) => {
-    oatcrypto.makeKeyStore();
+    oatcrypto.makeKeyStore(clientId);
 
     fs.writeFileSync(`${oatcrypto.KEY_STORE}/${clientId}/token`, token);
 };
@@ -66,8 +66,8 @@ const _parseResponseToken = (token) => {
     }
 
     const hmac = session.slice(0, 32);
-    const clientId = session.slice(32, 64).toString("hex");
-    const fields = JSON.parse(session.slice(64));
+    const clientId = session.slice(32, 52).toString("hex").toUpperCase();
+    const fields = JSON.parse(session.slice(52));
 
     return {
         key: { serverBoxPubKey, encApiKey },
@@ -114,16 +114,19 @@ const initTokenServer = (initialisationToken, newFields) => {
     // Generate token
     const encNextApiKey = oatcrypto.encrypt(clientId, nextApiKey);
     const sessionHmac = _hmacSessionData(clientId, nextApiKey, newFields);
-    const responseToken0 = Buffer.concat([
+
+    const tokenHeader = Buffer.concat([
         ourBoxPubKey, // 32 bytes
         encNextApiKey, // 32 bytes
-        Buffer.from("|"),
+    ]).toString("base64");
+
+    const tokenFooter = Buffer.concat([
         sessionHmac, // 32 bytes
         Buffer.from(clientId, "hex"), // 20 bytes
         Buffer.from(JSON.stringify(newFields)),
-    ]);
+    ]).toString("base64");
 
-    return responseToken0;
+    return `${tokenHeader}|${tokenFooter}`;
 };
 
 module.exports = {

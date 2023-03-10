@@ -4,7 +4,9 @@ const fs = require("fs");
 
 const KEY_STORE = `${process.env.HOME || "HI"}/.oatkeys`;
 
-const OAK_PASS = process.env.OAK_PASS;
+if (!process.env.OAK_PASS || process.env.OAK_PASS.length < 16)
+    throw new Error("OAK_PASS should be at least 16 characters long");
+const OAK_PASS = crypto.createHash("sha3-256").update(process.env.OAK_PASS).digest();
 
 /**
  * creates necessary directories for key storage
@@ -62,13 +64,13 @@ const _getSigningKey = (clientId) => {
     _checkKeyStore(clientId);
 
     const signingKey = fs.readFileSync(`${KEY_STORE}/${clientId}/signing.key`);
-    return new Uint8Array(signingKey);
+    return new Uint8Array(_decryptKey(signingKey));
 };
 
 const _setSigningKey = (clientId, signingKey) => {
     _makeKeyStore(clientId);
 
-    fs.writeFileSync(`${KEY_STORE}/${clientId}/signing.key`, Buffer.from(signingKey));
+    fs.writeFileSync(`${KEY_STORE}/${clientId}/signing.key`, _encryptKey(Buffer.from(signingKey)));
 };
 
 const _getVerifyingKey = (clientId) => {

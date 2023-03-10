@@ -18,7 +18,7 @@ if (!fs.existsSync(KEY_STORE)) fs.mkdirSync(KEY_STORE);
  *
  * @param {string} clientId - client id
  */
-const _makeKeyStore = (clientId) => {
+const makeKeyStore = (clientId) => {
     if (!fs.existsSync(`${KEY_STORE}/${clientId}`)) fs.mkdirSync(`${KEY_STORE}/${clientId}`);
 };
 
@@ -27,7 +27,7 @@ const _makeKeyStore = (clientId) => {
  *
  * @param {string} clientId - client id
  */
-const _checkKeyStore = (clientId) => {
+const checkKeyStore = (clientId) => {
     if (!fs.existsSync(`${KEY_STORE}/${clientId}`)) throw new Error("Key directory not found");
 };
 
@@ -75,7 +75,7 @@ const verify = (clientId, signedData) => {
  * @returns {Uint8Array} signing key
  */
 const _getSigningKey = (clientId) => {
-    _checkKeyStore(clientId);
+    checkKeyStore(clientId);
 
     const signingKey = fs.readFileSync(`${KEY_STORE}/${clientId}/signing.key`);
     return new Uint8Array(_decryptKey(signingKey));
@@ -88,7 +88,7 @@ const _getSigningKey = (clientId) => {
  * @param {Uint8Array} signingKey - signing key
  */
 const _setSigningKey = (clientId, signingKey) => {
-    _makeKeyStore(clientId);
+    makeKeyStore(clientId);
 
     fs.writeFileSync(`${KEY_STORE}/${clientId}/signing.key`, _encryptKey(Buffer.from(signingKey)));
 };
@@ -100,7 +100,7 @@ const _setSigningKey = (clientId, signingKey) => {
  * @returns {Uint8Array} verification key
  */
 const _getVerifyingKey = (clientId) => {
-    _checkKeyStore(clientId);
+    checkKeyStore(clientId);
 
     const verifyingKey = fs.readFileSync(`${KEY_STORE}/${clientId}/verifying.key`);
     return new Uint8Array(verifyingKey);
@@ -113,7 +113,7 @@ const _getVerifyingKey = (clientId) => {
  * @param {Uint8Array} verifyingKey - verification key
  */
 const _setVerifyingKey = (clientId, verifyingKey) => {
-    _makeKeyStore(clientId);
+    makeKeyStore(clientId);
 
     fs.writeFileSync(`${KEY_STORE}/${clientId}/verifying.key`, Buffer.from(verifyingKey));
 };
@@ -191,7 +191,7 @@ const _decryptKey = (encKey) => {
  * @returns {Uint8Array} shared key
  */
 const _getSharedKey = (clientId) => {
-    _checkKeyStore(clientId);
+    checkKeyStore(clientId);
 
     const sharedEncKey = fs.readFileSync(`${KEY_STORE}/${clientId}/shared.key`);
     return _decryptKey(sharedEncKey);
@@ -204,7 +204,7 @@ const _getSharedKey = (clientId) => {
  * @param {Uint8Array} sharedKey - shared key
  */
 const _setSharedKey = (clientId, sharedKey) => {
-    _makeKeyStore(clientId);
+    makeKeyStore(clientId);
 
     fs.writeFileSync(`${KEY_STORE}/${clientId}/shared.key`, _encryptKey(sharedKey));
 };
@@ -254,7 +254,9 @@ const initClientKeys = (getTheirBoxPubKeyFunc) => {
  *
  * @param {Buffer} theirBoxPubKey - client's box public key
  * @param {Buffer} theirSignPubKey - client's sign public key
- * @returns {Buffer} server's public box key
+ * @returns {Object} server's public box key
+ *     @param {string} clientId - client id
+ *     @param {Uint8Array} outBoxPubKey - box public key
  */
 const initServerKeys = (theirBoxPubKey, theirSignPubKey) => {
     theirBoxPubKey = new Uint8Array(theirBoxPubKey);
@@ -264,7 +266,7 @@ const initServerKeys = (theirBoxPubKey, theirSignPubKey) => {
     const clientId = _genSharedKey(theirBoxPubKey, myBoxKeyPair);
     _setVerifyingKey(clientId, theirSignPubKey);
 
-    return Buffer.from(myBoxKeyPair.publicKey);
+    return { clientId, ourBoxPubKey: Buffer.from(myBoxKeyPair.publicKey) };
 };
 
 /**
@@ -279,6 +281,11 @@ const listIds = () => {
 };
 
 module.exports = {
+    KEY_STORE: KEY_STORE,
+    OAT_PASS: OAT_PASS,
+
+    makeKeyStore: makeKeyStore,
+    checkKeyStore: checkKeyStore,
     sign: sign,
     verify: verify,
     encrypt: encrypt,
@@ -286,4 +293,13 @@ module.exports = {
     initClientKeys: initClientKeys,
     initServerKeys: initServerKeys,
     listIds: listIds,
+
+    _getSigningKey: _getSigningKey,
+    _setSigningKey: _setSigningKey,
+    _getVerifyingKey: _getVerifyingKey,
+    _setVerifyingKey: _setVerifyingKey,
+    _getSharedKey: _getSharedKey,
+    _setSharedKey: _setSharedKey,
+    _encryptKey: _encryptKey,
+    _decryptKey: _decryptKey,
 };

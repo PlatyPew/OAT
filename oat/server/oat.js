@@ -205,6 +205,7 @@ const authToken = (serverDomain, token) => {
  *
  * @param {string} domain - server domain
  * @param {function} initConn - initiate connection with server
+ *     @param {string} request token
  */
 const rollTokenClient = (domain, initConn) => {
     const clientId = _getDomainDB(domain);
@@ -252,6 +253,7 @@ const rollTokenServer = (token, newFields) => {
  * send public keys and store response token
  *
  * @param {function} initConn - function that returns response token from server
+ *     @param {string} initial request token
  */
 const initTokenClient = (domain, initConn) => {
     oatcrypto.initClientKeys((ourBoxPubKey, ourSignPubKey) => {

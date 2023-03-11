@@ -116,8 +116,8 @@ const authToken = (serverDomain, token) => {
     const domain = header.domain;
 
     if (domain !== serverDomain) return false;
-
     if (Buffer.compare(hmac, _hmacSessionData(clientId, apiKey, fields))) return false;
+    if (Buffer.compare(apiKey, _getApiKey(clientId))) return false;
 
     return true;
 };

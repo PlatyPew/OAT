@@ -219,6 +219,13 @@ const rollTokenClient = (domain, initConn) => {
     _setToken(clientId, newToken);
 };
 
+/**
+ * generates new token
+ *
+ * @param {string} token - request token
+ * @param {Object} newFields - session data to set
+ * @returns {string} response token
+ */
 const rollTokenServer = (token, newFields) => {
     const { data } = _parseRequestToken(token);
     const { clientId } = data;

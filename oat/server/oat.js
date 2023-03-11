@@ -173,6 +173,17 @@ const _parseResponseToken = (token) => {
 };
 
 /**
+ * returns session data as json
+ *
+ * @param {string} token - api token
+ * @returns {Object} session data
+ */
+const getSessionData = (token) => {
+    const footer = Buffer.from(token.split("|")[1], "base64");
+    return JSON.parse(footer.slice(52));
+};
+
+/**
  * check if token is authenticated
  *
  * @param {string} serverDomain - server domain
@@ -311,10 +322,12 @@ module.exports = {
     client: {
         initToken: initTokenClient,
         rollToken: rollTokenClient,
+        getSessionData: getSessionData,
     },
     server: {
         initToken: initTokenServer,
         authToken: authToken,
         rollToken: rollTokenServer,
+        getSessionData: getSessionData,
     },
 };

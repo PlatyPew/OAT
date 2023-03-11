@@ -204,9 +204,9 @@ const authToken = (serverDomain, token) => {
  * generates new token
  *
  * @param {string} domain - server domain
- * @returns {string} new request token
+ * @param {function} initConn - initiate connection with server
  */
-const rollTokenClient = (domain) => {
+const rollTokenClient = (domain, initConn) => {
     const clientId = _getDomainDB(domain);
     const token = _getToken(clientId);
     const { key } = _parseResponseToken(token);
@@ -214,9 +214,9 @@ const rollTokenClient = (domain) => {
     const apiKey = oatcrypto.decrypt(clientId, key.encApiKey);
     const sigApiKey = oatcrypto.sign(clientId, { apiKey, domain });
 
-    const data = token.split("|")[1];
+    const newToken = initConn(`${sigApiKey.toString("base64")}|${token.split("|")[1]}`);
 
-    return `${sigApiKey.toString("base64")}|${data}`;
+    _setToken(clientId, newToken);
 };
 
 const rollTokenServer = (token, newFields) => {

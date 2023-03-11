@@ -50,7 +50,18 @@ const _hmacSessionData = (clientId, apiKey, fields) => {
     return hmac;
 };
 
-const _parseRequestToken = (token) => {};
+const _parseRequestToken = (token) => {
+    let [key, session] = token.split("|");
+
+    const hmac = session.slice(0, 32);
+    const clientId = session.slice(32, 52).toString("hex").toUpperCase();
+    const fields = JSON.parse(session.slice(52));
+
+    return {
+        key,
+        data: { hmac, clientId, fields },
+    };
+};
 
 /**
  * parse response token into individual parts
@@ -87,6 +98,29 @@ const _parseResponseToken = (token) => {
         data: { hmac, clientId, fields },
     };
 };
+
+const authToken = (serverDomain, token) => {
+    const { key, data } = _parseResponseToken(token);
+    const { hmac, clientId, fields } = data;
+    let header;
+
+    try {
+        header = oatcrypto.verify(data.clientId, key);
+    } catch {
+        return false;
+    }
+
+    const apiKey = header.apiKey;
+    const domain = header.domain;
+
+    if (domain !== serverDomain) return false;
+
+    if (Buffer.compare(hmac, _hmacSessionData(clientId, apiKey, fields))) return false;
+
+    return true;
+};
+
+const rollTokenClient = (clientId) => {};
 
 /**
  * send public keys and store response token

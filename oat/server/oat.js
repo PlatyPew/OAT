@@ -52,6 +52,8 @@ const _hmacSessionData = (clientId, apiKey, fields) => {
 
 const _parseRequestToken = (token) => {
     let [key, session] = token.split("|");
+    key = Buffer.from(key, "base64");
+    session = Buffer.from(session, "base64");
 
     const hmac = session.slice(0, 32);
     const clientId = session.slice(32, 52).toString("hex").toUpperCase();
@@ -100,7 +102,7 @@ const _parseResponseToken = (token) => {
 };
 
 const authToken = (serverDomain, token) => {
-    const { key, data } = _parseResponseToken(token);
+    const { key, data } = _parseRequestToken(token);
     const { hmac, clientId, fields } = data;
     let header;
 
@@ -213,5 +215,6 @@ module.exports = {
     },
     server: {
         initToken: initTokenServer,
+        authToken: authToken,
     },
 };

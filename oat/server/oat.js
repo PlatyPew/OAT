@@ -122,16 +122,36 @@ const authToken = (serverDomain, token) => {
 
 const rollTokenClient = (clientId) => {};
 
+const _getDomainDB = (clientId) => {
+    if (!fs.existsSync(`${oatcrypto.KEY_STORE}/domain.json`)) return {};
+
+    return JSON.parse(fs.readFileSync(`${oatcrypto.KEY_STORE}/domain.json`));
+};
+
+const _setDomainDB = (clientId, domain) => {
+    let keyValue = { [domain]: clientId };
+
+    if (fs.existsSync(`${oatcrypto.KEY_STORE}/domain.json`)) {
+        keyValue = JSON.parse(fs.readFileSync(`${oatcrypto.KEY_STORE}/domain.json`));
+        keyValue[domain] = clientId;
+    }
+
+    fs.writeFileSync(`${oatcrypto.KEY_STORE}/domain.json`, JSON.stringify(keyValue));
+};
+
 /**
  * send public keys and store response token
  *
  * @param {function} initConn - function that returns response token from server
  */
-const initTokenClient = (initConn) => {
+const initTokenClient = (domain, initConn) => {
     oatcrypto.initClientKeys((ourBoxPubKey, ourSignPubKey) => {
         const token = initConn(Buffer.concat([ourBoxPubKey, ourSignPubKey]).toString("base64"));
         const { key, data } = _parseResponseToken(token);
-        _setToken(data.clientId, token);
+        const { clientId } = data;
+
+        _setToken(clientId, token);
+        _setDomainDB(clientId, domain);
 
         return key.serverBoxPubKey;
     });

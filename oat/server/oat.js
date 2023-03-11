@@ -52,6 +52,19 @@ const _hmacSessionData = (clientId, apiKey, fields) => {
 
 const _parseRequestToken = (token) => {};
 
+/**
+ * parse response token into individual parts
+ *
+ * @param {string} token - response token
+ * @returns {Object} json data of token
+ *     @param {Object} key - header of token
+ *         @param {Buffer} key.serverBoxPubKey - public key from server (null if not initial token)
+ *         @param {Buffer} key.encApiKey - encrypted api key from server
+ *      @param {Object} data - footer of token
+ *         @param {Buffer} data.hmac - calculated hmac
+ *         @param {string} data.clientId - client id
+ *         @param {Object} data.fields - session data of token
+ */
 const _parseResponseToken = (token) => {
     let [key, session] = token.split("|");
     key = Buffer.from(key, "base64");

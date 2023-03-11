@@ -27,7 +27,7 @@ const _setApiKey = (clientId, apiKey) => {
 const _getToken = (clientId) => {
     oatcrypto.checkKeyStore(clientId);
 
-    return fs.readFileSync(`${oatcrypto.KEY_STORE}/${clientId}/token`);
+    return fs.readFileSync(`${oatcrypto.KEY_STORE}/${clientId}/token`).toString();
 };
 
 const _setToken = (clientId, token) => {
@@ -120,7 +120,18 @@ const authToken = (serverDomain, token) => {
     return true;
 };
 
-const rollTokenClient = (domain) => {};
+const rollTokenClient = (domain) => {
+    const clientId = _getDomainDB(domain);
+    const token = _getToken(clientId);
+    const { key } = _parseResponseToken(token);
+
+    const apiKey = oatcrypto.decrypt(clientId, key.encApiKey);
+    const sigApiKey = oatcrypto.sign(clientId, { apiKey, domain });
+
+    const data = token.split("|")[1];
+
+    return `${sigApiKey.toString("base64")}|${data}`;
+};
 
 const _getDomainDB = (domain) => {
     if (!fs.existsSync(`${oatcrypto.KEY_STORE}/domain.json`)) return {};
@@ -198,6 +209,7 @@ const initTokenServer = (initialisationToken, newFields) => {
 module.exports = {
     client: {
         initToken: initTokenClient,
+        rollToken: rollTokenClient,
     },
     server: {
         initToken: initTokenServer,

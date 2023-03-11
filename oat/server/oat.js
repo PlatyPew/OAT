@@ -234,7 +234,7 @@ const rollTokenServer = (token, newFields) => {
     const rng = _genRNG();
     const currApiKey = _getApiKey(clientId);
     const nextApiKey = crypto.createHmac("sha3-256", currApiKey).update(rng).digest();
-    _setApiKey(nextApiKey);
+    _setApiKey(clientId, nextApiKey);
 
     const tokenHeader = oatcrypto.encrypt(clientId, nextApiKey).toString("base64");
 

@@ -12,30 +12,90 @@ const _genRNG = () => {
     return crypto.randomBytes(32);
 };
 
+/**
+ * get the api key by client id
+ *
+ * @param {string} clientId - client id
+ * @returns {Buffer} api key
+ */
 const _getApiKey = (clientId) => {
     oatcrypto.checkKeyStore(clientId);
 
     return fs.readFileSync(`${oatcrypto.KEY_STORE}/${clientId}/api.key`);
 };
 
+/**
+ * saves the api key
+ *
+ * @param {string} clientId - client id
+ * @param {Buffer} apiKey - api key
+ */
 const _setApiKey = (clientId, apiKey) => {
     oatcrypto.makeKeyStore(clientId);
 
     fs.writeFileSync(`${oatcrypto.KEY_STORE}/${clientId}/api.key`, apiKey);
 };
 
+/**
+ * get api token
+ *
+ * @param {string} clientId - client id
+ * @returns {string} api token
+ */
 const _getToken = (clientId) => {
     oatcrypto.checkKeyStore(clientId);
 
     return fs.readFileSync(`${oatcrypto.KEY_STORE}/${clientId}/token`).toString();
 };
 
+/**
+ * saves api token
+ *
+ * @param {string} clientId - client id
+ * @param {string} token - api token
+ */
 const _setToken = (clientId, token) => {
     oatcrypto.makeKeyStore(clientId);
 
     fs.writeFileSync(`${oatcrypto.KEY_STORE}/${clientId}/token`, token);
 };
 
+/**
+ * get client id by domain
+ *
+ * @param {string} domain - domain of server
+ * @returns {string} client id
+ */
+const _getDomainDB = (domain) => {
+    if (!fs.existsSync(`${oatcrypto.KEY_STORE}/domain.json`)) return {};
+    return JSON.parse(fs.readFileSync(`${oatcrypto.KEY_STORE}/domain.json`))[domain];
+};
+
+/**
+ * saves client id by domain
+ *
+ * @param {string} domain - domain of server
+ * @param {string} clientId - client id
+ */
+const _setDomainDB = (domain, clientId) => {
+    let keyValue = { [domain]: clientId };
+
+    if (fs.existsSync(`${oatcrypto.KEY_STORE}/domain.json`)) {
+        keyValue = JSON.parse(fs.readFileSync(`${oatcrypto.KEY_STORE}/domain.json`));
+        keyValue[domain] = clientId;
+    }
+
+    fs.writeFileSync(`${oatcrypto.KEY_STORE}/domain.json`, JSON.stringify(keyValue));
+};
+
+/**
+ * hmacs the session data
+ *
+ * @param {string} clientId - client id
+ * @param {Buffer} apiKey - api key
+ * @param {Object} fields - session data
+ * @returns {Buffer} hmac
+ */
 const _hmacSessionData = (clientId, apiKey, fields) => {
     const clientIdBytes = Buffer.from(clientId, "hex");
     const fieldBytes = Buffer.from(JSON.stringify(fields));
@@ -50,6 +110,17 @@ const _hmacSessionData = (clientId, apiKey, fields) => {
     return hmac;
 };
 
+/**
+ * parse request token into individual parts
+ *
+ * @param {string} token - response token
+ * @returns {Object} json data of token
+ *     @param {Object} key - signed api key
+ *      @param {Object} data - footer of token
+ *         @param {Buffer} data.hmac - calculated hmac
+ *         @param {string} data.clientId - client id
+ *         @param {Object} data.fields - session data of token
+ */
 const _parseRequestToken = (token) => {
     let [key, session] = token.split("|");
     key = Buffer.from(key, "base64");
@@ -101,6 +172,13 @@ const _parseResponseToken = (token) => {
     };
 };
 
+/**
+ * check if token is authenticated
+ *
+ * @param {string} serverDomain - server domain
+ * @param {string} token - request token
+ * @returns {boolean} if authenticated
+ */
 const authToken = (serverDomain, token) => {
     const { key, data } = _parseRequestToken(token);
     const { hmac, clientId, fields } = data;
@@ -122,6 +200,12 @@ const authToken = (serverDomain, token) => {
     return true;
 };
 
+/**
+ * generates new token
+ *
+ * @param {string} domain - server domain
+ * @returns {string} new request token
+ */
 const rollTokenClient = (domain) => {
     const clientId = _getDomainDB(domain);
     const token = _getToken(clientId);
@@ -133,22 +217,6 @@ const rollTokenClient = (domain) => {
     const data = token.split("|")[1];
 
     return `${sigApiKey.toString("base64")}|${data}`;
-};
-
-const _getDomainDB = (domain) => {
-    if (!fs.existsSync(`${oatcrypto.KEY_STORE}/domain.json`)) return {};
-    return JSON.parse(fs.readFileSync(`${oatcrypto.KEY_STORE}/domain.json`))[domain];
-};
-
-const _setDomainDB = (domain, clientId) => {
-    let keyValue = { [domain]: clientId };
-
-    if (fs.existsSync(`${oatcrypto.KEY_STORE}/domain.json`)) {
-        keyValue = JSON.parse(fs.readFileSync(`${oatcrypto.KEY_STORE}/domain.json`));
-        keyValue[domain] = clientId;
-    }
-
-    fs.writeFileSync(`${oatcrypto.KEY_STORE}/domain.json`, JSON.stringify(keyValue));
 };
 
 /**

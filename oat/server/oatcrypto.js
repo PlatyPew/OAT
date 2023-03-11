@@ -16,32 +16,43 @@ if (!fs.existsSync(KEY_STORE)) fs.mkdirSync(KEY_STORE);
 /**
  * makes directory if it does not exist
  *
- * @param {string} clientId - client id
+ * @async
+ * @param {Promise<string>} clientId - client id
  */
-const makeKeyStore = (clientId) => {
-    if (!fs.existsSync(`${KEY_STORE}/${clientId}`)) fs.mkdirSync(`${KEY_STORE}/${clientId}`);
+const makeKeyStore = async (clientId) => {
+    try {
+        await fs.promises.access(`${KEY_STORE}/${clientId}`, fs.constants.F_OK);
+    } catch {
+        await fs.promises.mkdir(`${KEY_STORE}/${clientId}`);
+    }
 };
 
 /**
  * checks if directory exists
  *
- * @param {string} clientId - client id
+ * @async
+ * @param {Promise<string>} clientId - client id
  */
-const checkKeyStore = (clientId) => {
-    if (!fs.existsSync(`${KEY_STORE}/${clientId}`)) throw new Error("Key directory not found");
+const checkKeyStore = async (clientId) => {
+    try {
+        await fs.promises.access(`${KEY_STORE}/${clientId}`, fs.constants.F_OK);
+    } catch {
+        throw new Error("Key directory not found");
+    }
 };
 
 /**
  * signs api key with client private key
  *
+ * @async
  * @param {string} clientId - client id of shared key
  * @param {Object} data - api key and domain to sign
  *     @param {Buffer} data.apiKey - the api key to sign
  *     @param {string} data.apiKey - the api key to sign
- * @returns {Buffer} signature and data
+ * @returns {Promise<Buffer>} signature and data
  */
-const sign = (clientId, { apiKey, domain }) => {
-    const privKey = _getSigningKey(clientId);
+const sign = async (clientId, { apiKey, domain }) => {
+    const privKey = await _getSigningKey(clientId);
 
     const unsignedData = Buffer.concat([apiKey, Buffer.from(domain)]);
     const signature = sodium.crypto_sign(unsignedData, privKey);
@@ -52,14 +63,15 @@ const sign = (clientId, { apiKey, domain }) => {
 /**
  * verify api key with client private key
  *
+ * @async
  * @param {string} clientId - client id of shared key
  * @param {Uint8Array} signedData - signature and data
  * @returns {Object} api key and domain
  *     @param {Buffer} apiKey - unsigned api key
- *     @param {string} domain - unsigned domain
+ *     @param {Promise<string>} domain - unsigned domain
  */
-const verify = (clientId, signedData) => {
-    const pubKey = _getVerifyingKey(clientId);
+const verify = async (clientId, signedData) => {
+    const pubKey = await _getVerifyingKey(clientId);
 
     const unsignedData = sodium.crypto_sign_open(signedData, pubKey);
     const apiKey = Buffer.from(unsignedData.slice(0, 32));
@@ -71,62 +83,73 @@ const verify = (clientId, signedData) => {
 /**
  * read and decrypt signing key
  *
+ * @async
  * @param {string} clientId - client id
- * @returns {Uint8Array} signing key
+ * @returns {Promise<Uint8Array>} signing key
  */
-const _getSigningKey = (clientId) => {
-    checkKeyStore(clientId);
+const _getSigningKey = async (clientId) => {
+    await checkKeyStore(clientId);
 
-    const signingKey = fs.readFileSync(`${KEY_STORE}/${clientId}/signing.key`);
+    const signingKey = await fs.promises.readFile(`${KEY_STORE}/${clientId}/signing.key`);
     return new Uint8Array(_decryptKey(signingKey));
 };
 
 /**
  * encrypts and saves signing key
  *
+ * @async
  * @param {string} clientId - client id
- * @param {Uint8Array} signingKey - signing key
+ * @param {Promise<Uint8Array>} signingKey - signing key
  */
-const _setSigningKey = (clientId, signingKey) => {
-    makeKeyStore(clientId);
+const _setSigningKey = async (clientId, signingKey) => {
+    await makeKeyStore(clientId);
 
-    fs.writeFileSync(`${KEY_STORE}/${clientId}/signing.key`, _encryptKey(Buffer.from(signingKey)));
+    await fs.promises.writeFile(
+        `${KEY_STORE}/${clientId}/signing.key`,
+        _encryptKey(Buffer.from(signingKey))
+    );
 };
 
 /**
  * reads verification key
  *
+ * @async
  * @param {string} clientId - client id
- * @returns {Uint8Array} verification key
+ * @returns {Promise<Uint8Array>} verification key
  */
-const _getVerifyingKey = (clientId) => {
-    checkKeyStore(clientId);
+const _getVerifyingKey = async (clientId) => {
+    await checkKeyStore(clientId);
 
-    const verifyingKey = fs.readFileSync(`${KEY_STORE}/${clientId}/verifying.key`);
+    const verifyingKey = await fs.promises.readFile(`${KEY_STORE}/${clientId}/verifying.key`);
     return new Uint8Array(verifyingKey);
 };
 
 /**
  * saves verification key
  *
+ * @async
  * @param {string} clientId - client id
- * @param {Uint8Array} verifyingKey - verification key
+ * @param {Promise<Uint8Array>} verifyingKey - verification key
  */
-const _setVerifyingKey = (clientId, verifyingKey) => {
-    makeKeyStore(clientId);
+const _setVerifyingKey = async (clientId, verifyingKey) => {
+    await makeKeyStore(clientId);
 
-    fs.writeFileSync(`${KEY_STORE}/${clientId}/verifying.key`, Buffer.from(verifyingKey));
+    await fs.promises.writeFile(
+        `${KEY_STORE}/${clientId}/verifying.key`,
+        Buffer.from(verifyingKey)
+    );
 };
 
 /**
  * encrypt api key using shared key
  *
+ * @async
  * @param {string} clientId - client id of shared key
  * @param {Buffer} apiKey - api key
- * @returns {Buffer} encrypted api key
+ * @returns {Promise<Buffer>} encrypted api key
  */
-const encrypt = (clientId, apiKey) => {
-    const sharedKey = _getSharedKey(clientId);
+const encrypt = async (clientId, apiKey) => {
+    const sharedKey = await _getSharedKey(clientId);
 
     const iv = crypto.randomBytes(12);
     const cipher = crypto.createCipheriv("aes-256-gcm", sharedKey, iv);
@@ -139,12 +162,13 @@ const encrypt = (clientId, apiKey) => {
 /**
  * decrypt api key using shared key
  *
+ * @async
  * @param {string} clientId - client id of shared key
  * @param {Buffer} encApiKey - encrypted api key
- * @returns {Buffer} decrypted api key
+ * @returns {Promise<Buffer>} decrypted api key
  */
-const decrypt = (clientId, encApiKey) => {
-    const sharedKey = _getSharedKey(clientId);
+const decrypt = async (clientId, encApiKey) => {
+    const sharedKey = await _getSharedKey(clientId);
 
     const iv = encApiKey.slice(0, 12);
     const enc = encApiKey.slice(12);
@@ -187,44 +211,47 @@ const _decryptKey = (encKey) => {
 /**
  * gets and decrypts shared key
  *
+ * @async
  * @param {string} clientId - client id
- * @returns {Uint8Array} shared key
+ * @returns {Promise<Uint8Array>} shared key
  */
-const _getSharedKey = (clientId) => {
-    checkKeyStore(clientId);
+const _getSharedKey = async (clientId) => {
+    await checkKeyStore(clientId);
 
-    const sharedEncKey = fs.readFileSync(`${KEY_STORE}/${clientId}/shared.key`);
+    const sharedEncKey = await fs.promises.readFile(`${KEY_STORE}/${clientId}/shared.key`);
     return _decryptKey(sharedEncKey);
 };
 
 /**
  * encrypts and saves shared key
  *
+ * @async
  * @param {string} clientId - client id
- * @param {Uint8Array} sharedKey - shared key
+ * @param {Promise<Uint8Array>} sharedKey - shared key
  */
-const _setSharedKey = (clientId, sharedKey) => {
-    makeKeyStore(clientId);
+const _setSharedKey = async (clientId, sharedKey) => {
+    await makeKeyStore(clientId);
 
-    fs.writeFileSync(`${KEY_STORE}/${clientId}/shared.key`, _encryptKey(sharedKey));
+    await fs.promises.writeFile(`${KEY_STORE}/${clientId}/shared.key`, _encryptKey(sharedKey));
 };
 
 /**
  * generate shared key using elliptic curve diffie hellman
  *
+ * @async
  * @param {Uint8Array} theirPubKey - exchanger public key
  * @param {Uint8Array} outPrivKey - own private key
  * @returns {Object} client id and shared key
  *     @param {string} clientId - client id of shared key
- *     @param {Uint8Array} sharedKey - the shared key
+ *     @param {Promise<Uint8Array>} sharedKey - the shared key
  */
-const _genSharedKey = (theirPubKey, myKeyPair) => {
+const _genSharedKey = async (theirPubKey, myKeyPair) => {
     const ourPrivKey = myKeyPair.privateKey;
 
     const sharedKey = sodium.crypto_scalarmult(ourPrivKey, theirPubKey);
     const clientId = crypto.createHash("sha1").update(sharedKey).digest("hex").toUpperCase();
 
-    _setSharedKey(clientId, sharedKey);
+    await _setSharedKey(clientId, sharedKey);
 
     return clientId;
 };
@@ -234,19 +261,19 @@ const _genSharedKey = (theirPubKey, myKeyPair) => {
  *
  * @param {function} getTheirBoxPubKeyFunc - anon function to get server box public key
  */
-const initClientKeys = (getTheirBoxPubKeyFunc) => {
+const initClientKeys = async (getTheirBoxPubKeyFunc) => {
     const myBoxKeyPair = sodium.crypto_box_keypair();
     const mySignKeyPair = sodium.crypto_sign_keypair();
 
     const theirBoxPubKey = new Uint8Array(
-        getTheirBoxPubKeyFunc(
+        await getTheirBoxPubKeyFunc(
             Buffer.from(myBoxKeyPair.publicKey),
             Buffer.from(mySignKeyPair.publicKey)
         )
     );
 
-    const clientId = _genSharedKey(theirBoxPubKey, myBoxKeyPair);
-    _setSigningKey(clientId, mySignKeyPair.privateKey);
+    const clientId = await _genSharedKey(theirBoxPubKey, myBoxKeyPair);
+    await _setSigningKey(clientId, mySignKeyPair.privateKey);
 };
 
 /**
@@ -256,15 +283,15 @@ const initClientKeys = (getTheirBoxPubKeyFunc) => {
  * @param {Buffer} theirSignPubKey - client's sign public key
  * @returns {Object} server's public box key
  *     @param {string} clientId - client id
- *     @param {Uint8Array} outBoxPubKey - box public key
+ *     @param {Promise<Uint8Array>} outBoxPubKey - box public key
  */
-const initServerKeys = (theirBoxPubKey, theirSignPubKey) => {
+const initServerKeys = async (theirBoxPubKey, theirSignPubKey) => {
     theirBoxPubKey = new Uint8Array(theirBoxPubKey);
     theirSignPubKey = new Uint8Array(theirSignPubKey);
 
     const myBoxKeyPair = sodium.crypto_box_keypair();
-    const clientId = _genSharedKey(theirBoxPubKey, myBoxKeyPair);
-    _setVerifyingKey(clientId, theirSignPubKey);
+    const clientId = await _genSharedKey(theirBoxPubKey, myBoxKeyPair);
+    await _setVerifyingKey(clientId, theirSignPubKey);
 
     return { clientId, ourBoxPubKey: Buffer.from(myBoxKeyPair.publicKey) };
 };

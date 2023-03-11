@@ -15,77 +15,89 @@ const _genRNG = () => {
 /**
  * get the api key by client id
  *
+ * @async
  * @param {string} clientId - client id
- * @returns {Buffer} api key
+ * @returns {Promise<Buffer>} api key
  */
-const _getApiKey = (clientId) => {
-    oatcrypto.checkKeyStore(clientId);
+const _getApiKey = async (clientId) => {
+    await oatcrypto.checkKeyStore(clientId);
 
-    return fs.readFileSync(`${oatcrypto.KEY_STORE}/${clientId}/api.key`);
+    return await fs.promises.readFile(`${oatcrypto.KEY_STORE}/${clientId}/api.key`);
 };
 
 /**
  * saves the api key
  *
+ * @async
  * @param {string} clientId - client id
  * @param {Buffer} apiKey - api key
  */
-const _setApiKey = (clientId, apiKey) => {
-    oatcrypto.makeKeyStore(clientId);
+const _setApiKey = async (clientId, apiKey) => {
+    await oatcrypto.makeKeyStore(clientId);
 
-    fs.writeFileSync(`${oatcrypto.KEY_STORE}/${clientId}/api.key`, apiKey);
+    await fs.promises.writeFile(`${oatcrypto.KEY_STORE}/${clientId}/api.key`, apiKey);
 };
 
 /**
  * get api token
  *
+ * @async
  * @param {string} clientId - client id
- * @returns {string} api token
+ * @returns {Promise<string>} api token
  */
-const _getToken = (clientId) => {
-    oatcrypto.checkKeyStore(clientId);
+const _getToken = async (clientId) => {
+    await oatcrypto.checkKeyStore(clientId);
 
-    return fs.readFileSync(`${oatcrypto.KEY_STORE}/${clientId}/token`).toString();
+    return (await fs.promises.readFile(`${oatcrypto.KEY_STORE}/${clientId}/token`)).toString();
 };
 
 /**
  * saves api token
  *
+ * @async
  * @param {string} clientId - client id
  * @param {string} token - api token
  */
-const _setToken = (clientId, token) => {
-    oatcrypto.makeKeyStore(clientId);
+const _setToken = async (clientId, token) => {
+    await oatcrypto.makeKeyStore(clientId);
 
-    fs.writeFileSync(`${oatcrypto.KEY_STORE}/${clientId}/token`, token);
+    fs.promises.writeFile(`${oatcrypto.KEY_STORE}/${clientId}/token`, token);
 };
 
 /**
  * get client id by domain
  *
+ * @async
  * @param {string} domain - domain of server
- * @returns {string} client id
+ * @returns {Promise<string>} client id
  */
-const _getDomainDB = (domain) => {
-    if (!fs.existsSync(`${oatcrypto.KEY_STORE}/domain.json`)) return {};
-    return JSON.parse(fs.readFileSync(`${oatcrypto.KEY_STORE}/domain.json`))[domain];
+const _getDomainDB = async (domain) => {
+    try {
+        await fs.promises.access(`${oatcrypto.KEY_STORE}/domain.json`, fs.constants.F_OK);
+        return JSON.parse(await fs.promises.readFile(`${oatcrypto.KEY_STORE}/domain.json`))[domain];
+    } catch (err) {
+        return "";
+    }
 };
 
 /**
  * saves client id by domain
  *
+ * @async
  * @param {string} domain - domain of server
  * @param {string} clientId - client id
  */
-const _setDomainDB = (domain, clientId) => {
+const _setDomainDB = async (domain, clientId) => {
     let keyValue = { [domain]: clientId };
 
-    if (fs.existsSync(`${oatcrypto.KEY_STORE}/domain.json`)) {
-        keyValue = JSON.parse(fs.readFileSync(`${oatcrypto.KEY_STORE}/domain.json`));
-        keyValue[domain] = clientId;
-    }
+    try {
+        await fs.promises.access(`${oatcrypto.KEY_STORE}/domain.json`, fs.constants.F_OK);
 
-    fs.writeFileSync(`${oatcrypto.KEY_STORE}/domain.json`, JSON.stringify(keyValue));
+        keyValue = JSON.parse(fs.promises.readFile(`${oatcrypto.KEY_STORE}/domain.json`));
+        keyValue[domain] = clientId;
+    } catch {}
+
+    fs.promises.writeFile(`${oatcrypto.KEY_STORE}/domain.json`, JSON.stringify(keyValue));
 };
 
 /**
@@ -186,17 +198,18 @@ const getSessionData = (token) => {
 /**
  * check if token is authenticated
  *
+ * @async
  * @param {string} serverDomain - server domain
  * @param {string} token - request token
- * @returns {boolean} if authenticated
+ * @returns {Promise<boolean>} if authenticated
  */
-const authToken = (serverDomain, token) => {
+const authToken = async (serverDomain, token) => {
     const { key, data } = _parseRequestToken(token);
     const { hmac, clientId, fields } = data;
     let header;
 
     try {
-        header = oatcrypto.verify(data.clientId, key);
+        header = await oatcrypto.verify(data.clientId, key);
     } catch {
         return false;
     }
@@ -206,7 +219,7 @@ const authToken = (serverDomain, token) => {
 
     if (domain !== serverDomain) return false;
     if (Buffer.compare(hmac, _hmacSessionData(clientId, apiKey, fields))) return false;
-    if (Buffer.compare(apiKey, _getApiKey(clientId))) return false;
+    if (Buffer.compare(apiKey, await _getApiKey(clientId))) return false;
 
     return true;
 };
@@ -214,21 +227,22 @@ const authToken = (serverDomain, token) => {
 /**
  * generates new token
  *
+ * @async
  * @param {string} domain - server domain
  * @param {function} initConn - initiate connection with server
  *     @param {string} request token
  */
-const rollTokenClient = (domain, initConn) => {
-    const clientId = _getDomainDB(domain);
-    const token = _getToken(clientId);
+const rollTokenClient = async (domain, initConn) => {
+    const clientId = await _getDomainDB(domain);
+    const token = await _getToken(clientId);
     const { key } = _parseResponseToken(token);
 
-    const apiKey = oatcrypto.decrypt(clientId, key.encApiKey);
-    const sigApiKey = oatcrypto.sign(clientId, { apiKey, domain });
+    const apiKey = await oatcrypto.decrypt(clientId, key.encApiKey);
+    const sigApiKey = await oatcrypto.sign(clientId, { apiKey, domain });
 
-    const newToken = initConn(`${sigApiKey.toString("base64")}|${token.split("|")[1]}`);
+    const newToken = await initConn(`${sigApiKey.toString("base64")}|${token.split("|")[1]}`);
 
-    _setToken(clientId, newToken);
+    await _setToken(clientId, newToken);
 };
 
 /**
@@ -236,18 +250,18 @@ const rollTokenClient = (domain, initConn) => {
  *
  * @param {string} token - request token
  * @param {Object} newFields - session data to set
- * @returns {string} response token
+ * @returns {Promise<string>} response token
  */
-const rollTokenServer = (token, newFields) => {
+const rollTokenServer = async (token, newFields) => {
     const { data } = _parseRequestToken(token);
     const { clientId } = data;
 
     const rng = _genRNG();
-    const currApiKey = _getApiKey(clientId);
+    const currApiKey = await _getApiKey(clientId);
     const nextApiKey = crypto.createHmac("sha3-256", currApiKey).update(rng).digest();
     _setApiKey(clientId, nextApiKey);
 
-    const tokenHeader = oatcrypto.encrypt(clientId, nextApiKey).toString("base64");
+    const tokenHeader = (await oatcrypto.encrypt(clientId, nextApiKey)).toString("base64");
 
     const sessionHmac = _hmacSessionData(clientId, nextApiKey, newFields);
 
@@ -264,16 +278,19 @@ const rollTokenServer = (token, newFields) => {
  * send public keys and store response token
  *
  * @param {function} initConn - function that returns response token from server
- *     @param {string} initial request token
+ *     @param {Promise<string>} initial request token
  */
-const initTokenClient = (domain, initConn) => {
-    oatcrypto.initClientKeys((ourBoxPubKey, ourSignPubKey) => {
-        const token = initConn(Buffer.concat([ourBoxPubKey, ourSignPubKey]).toString("base64"));
+const initTokenClient = async (domain, initConn) => {
+    await oatcrypto.initClientKeys(async (ourBoxPubKey, ourSignPubKey) => {
+        const token = (await initConn(Buffer.concat([ourBoxPubKey, ourSignPubKey]))).toString(
+            "base64"
+        );
+
         const { key, data } = _parseResponseToken(token);
         const { clientId } = data;
 
-        _setToken(clientId, token);
-        _setDomainDB(domain, clientId);
+        await _setToken(clientId, token);
+        await _setDomainDB(domain, clientId);
 
         return key.serverBoxPubKey;
     });
@@ -284,16 +301,19 @@ const initTokenClient = (domain, initConn) => {
  *
  * @param {string} initialisationToken - initial request token from client
  * @param {Object} newFields - json data to put in
- * @returns {string} response token
+ * @returns {Promise<string>} response token
  */
-const initTokenServer = (initialisationToken, newFields) => {
+const initTokenServer = async (initialisationToken, newFields) => {
     // Passing initialisation token
     initialisationToken = Buffer.from(initialisationToken, "base64");
     const clientBoxPubKey = initialisationToken.slice(0, 32);
     const clientSignPubKey = initialisationToken.slice(32);
 
     // Generate shared key
-    const { clientId, ourBoxPubKey } = oatcrypto.initServerKeys(clientBoxPubKey, clientSignPubKey);
+    const { clientId, ourBoxPubKey } = await oatcrypto.initServerKeys(
+        clientBoxPubKey,
+        clientSignPubKey
+    );
 
     // Generate api key
     const rng = _genRNG();
@@ -301,7 +321,7 @@ const initTokenServer = (initialisationToken, newFields) => {
     _setApiKey(clientId, nextApiKey);
 
     // Generate token
-    const encNextApiKey = oatcrypto.encrypt(clientId, nextApiKey);
+    const encNextApiKey = await oatcrypto.encrypt(clientId, nextApiKey);
     const sessionHmac = _hmacSessionData(clientId, nextApiKey, newFields);
 
     const tokenHeader = Buffer.concat([

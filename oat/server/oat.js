@@ -219,6 +219,28 @@ const rollTokenClient = (domain) => {
     return `${sigApiKey.toString("base64")}|${data}`;
 };
 
+const rollTokenServer = (token, newFields) => {
+    const { data } = _parseRequestToken(token);
+    const { clientId } = data;
+
+    const rng = _genRNG();
+    const currApiKey = _getApiKey(clientId);
+    const nextApiKey = crypto.createHmac("sha3-256", currApiKey).update(rng).digest();
+    _setApiKey(nextApiKey);
+
+    const tokenHeader = oatcrypto.encrypt(clientId, nextApiKey).toString("base64");
+
+    const sessionHmac = _hmacSessionData(clientId, nextApiKey, newFields);
+
+    const tokenFooter = Buffer.concat([
+        sessionHmac, // 32 bytes
+        Buffer.from(clientId, "hex"), // 20 bytes
+        Buffer.from(JSON.stringify(newFields)),
+    ]).toString("base64");
+
+    return `${tokenHeader}|${tokenFooter}`;
+};
+
 /**
  * send public keys and store response token
  *
@@ -284,5 +306,6 @@ module.exports = {
     server: {
         initToken: initTokenServer,
         authToken: authToken,
+        rollToken: rollTokenServer,
     },
 };

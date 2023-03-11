@@ -120,15 +120,14 @@ const authToken = (serverDomain, token) => {
     return true;
 };
 
-const rollTokenClient = (clientId) => {};
+const rollTokenClient = (domain) => {};
 
-const _getDomainDB = (clientId) => {
+const _getDomainDB = (domain) => {
     if (!fs.existsSync(`${oatcrypto.KEY_STORE}/domain.json`)) return {};
-
-    return JSON.parse(fs.readFileSync(`${oatcrypto.KEY_STORE}/domain.json`));
+    return JSON.parse(fs.readFileSync(`${oatcrypto.KEY_STORE}/domain.json`))[domain];
 };
 
-const _setDomainDB = (clientId, domain) => {
+const _setDomainDB = (domain, clientId) => {
     let keyValue = { [domain]: clientId };
 
     if (fs.existsSync(`${oatcrypto.KEY_STORE}/domain.json`)) {
@@ -151,7 +150,7 @@ const initTokenClient = (domain, initConn) => {
         const { clientId } = data;
 
         _setToken(clientId, token);
-        _setDomainDB(clientId, domain);
+        _setDomainDB(domain, clientId);
 
         return key.serverBoxPubKey;
     });

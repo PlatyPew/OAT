@@ -62,8 +62,8 @@ const verify = (clientId, signedData) => {
     const pubKey = _getVerifyingKey(clientId);
 
     const unsignedData = sodium.crypto_sign_open(signedData, pubKey);
-    const apiKey = Buffer.from(unsignedData.slice(0, 64));
-    const domain = Buffer.from(unsignedData.slice(64)).toString();
+    const apiKey = Buffer.from(unsignedData.slice(0, 32));
+    const domain = Buffer.from(unsignedData.slice(32)).toString();
 
     return { apiKey, domain };
 };

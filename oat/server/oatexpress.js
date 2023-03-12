@@ -4,8 +4,10 @@ const crypto = require("crypto");
 
 const oat = require("./oat").server;
 
-const TMP_DIR = "./tmp";
+const DOMAIN = process.env.DOMAIN;
+if (!DOMAIN) throw new Error("DOMAIN variable not set");
 
+const TMP_DIR = "./tmp";
 if (!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR);
 
 const init = async (req, res, next) => {
@@ -29,7 +31,7 @@ const init = async (req, res, next) => {
 
         const responseToken = await oat.initToken(requestToken, {});
         res.setHeader("OAT", responseToken);
-        res.send();
+        res.json({ response: true });
     } catch {
         res.status(400).json({ response: "Invalid Token" });
     }
@@ -37,7 +39,20 @@ const init = async (req, res, next) => {
     return next();
 };
 
-const createOatPath = () => {
+const auth = async (req, res, next) => {
+    const requestToken = req.get("OAT");
+
+    try {
+        if (!(await oat.authToken(DOMAIN), requestToken))
+            return res.status(403).json({ response: false });
+    } catch {
+        res.status(400).json({ response: "Invalid Token" });
+    }
+
+    next();
+};
+
+const oatPath = (_, res, next) => {
     // Create a file on the system which begins the init process
     const rng = crypto.randomBytes(8).toString("hex");
     const pathToOat = `${TMP_DIR}/${rng}`;
@@ -48,10 +63,12 @@ const createOatPath = () => {
         }, 15000);
     });
 
-    return `/oat/${rng}`;
+    res.setHeader("OATINIT", `/oat/${rng}`);
+    next();
 };
 
 module.exports = {
     init: init,
-    createOatPath: createOatPath,
+    auth: auth,
+    oatPath: oatPath,
 };

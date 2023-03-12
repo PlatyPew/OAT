@@ -39,14 +39,17 @@ const init = async (req, res, next) => {
     return next();
 };
 
-const auth = async (req, res, next) => {
+const roll = async (req, res, next) => {
     const requestToken = req.get("OAT");
 
     try {
-        if (!(await oat.authToken(DOMAIN), requestToken))
+        if (!(await oat.authToken(DOMAIN, requestToken)))
             return res.status(403).json({ response: false });
+
+        const responseToken = await oat.rollToken(requestToken, oat.getSessionData(requestToken));
+        res.setHeader("OAT", responseToken);
     } catch {
-        res.status(400).json({ response: "Invalid Token" });
+        return res.status(400).json({ response: "Invalid Token" });
     }
 
     next();
@@ -69,6 +72,6 @@ const oatPath = (_, res, next) => {
 
 module.exports = {
     init: init,
-    auth: auth,
+    roll: roll,
     oatPath: oatPath,
 };

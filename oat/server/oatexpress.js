@@ -39,12 +39,12 @@ const init = async (req, res, next) => {
 
 const createOatPath = () => {
     // Create a file on the system which begins the init process
-    const rng = crypto.randomBytes(32).toString("hex");
+    const rng = crypto.randomBytes(8).toString("hex");
     const pathToOat = `${TMP_DIR}/${rng}`;
 
     fs.writeFile(pathToOat, "", () => {
         setTimeout(() => {
-            fs.promises.unlink(pathToOat);
+            fs.unlink(pathToOat, (_) => {});
         }, 15000);
     });
 

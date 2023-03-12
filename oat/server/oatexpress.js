@@ -10,6 +10,29 @@ if (!DOMAIN) throw new Error("DOMAIN variable not set");
 const TMP_DIR = "./tmp";
 if (!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR);
 
+/**
+ * dynamically create a path to init keys exchange
+ */
+const initpath = (_, res, next) => {
+    // Create a file on the system which begins the init process
+    const rng = crypto.randomBytes(8).toString("hex");
+    const pathToOat = `${TMP_DIR}/${rng}`;
+
+    fs.writeFile(pathToOat, "", () => {
+        setTimeout(() => {
+            fs.unlink(pathToOat, (_) => {});
+        }, 15000);
+    });
+
+    res.setHeader("OATINIT", `/oat/${rng}`);
+    next();
+};
+
+/**
+ * initialise the key exchange
+ *
+ * @async
+ */
 const init = async (req, res, next) => {
     const dirname = path.dirname(req.path);
     const basename = path.basename(req.path);
@@ -39,6 +62,11 @@ const init = async (req, res, next) => {
     return next();
 };
 
+/**
+ * roll to the next token
+ *
+ * @async
+ */
 const roll = async (req, res, next) => {
     const requestToken = req.get("OAT");
 
@@ -55,23 +83,8 @@ const roll = async (req, res, next) => {
     next();
 };
 
-const oatPath = (_, res, next) => {
-    // Create a file on the system which begins the init process
-    const rng = crypto.randomBytes(8).toString("hex");
-    const pathToOat = `${TMP_DIR}/${rng}`;
-
-    fs.writeFile(pathToOat, "", () => {
-        setTimeout(() => {
-            fs.unlink(pathToOat, (_) => {});
-        }, 15000);
-    });
-
-    res.setHeader("OATINIT", `/oat/${rng}`);
-    next();
-};
-
 module.exports = {
+    initpath: initpath,
     init: init,
     roll: roll,
-    oatPath: oatPath,
 };

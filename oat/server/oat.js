@@ -3,8 +3,6 @@ const fs = require("fs");
 
 const oatcrypto = require("./oatcrypto");
 
-const { KeyInfoModel } = require("./KeyModel");
-
 /**
  * generates random 256-bits
  *
@@ -22,10 +20,10 @@ const _genRNG = () => {
  * @returns {Promise<Buffer>} api key
  */
 const _getApiKey = async (clientId) => {
-    const keystore = await KeyInfoModel.findOne({ clientId: clientId });
-    if (keystore === null) return null;
+    await oatcrypto.checkKeyStore(clientId);
 
-    return Buffer.from(keystore.currApiKey);
+    const apiKey = await fs.promises.readFile(`${oatcrypto.KEY_STORE}/${clientId}/api.key`);
+    return new Uint8Array(apiKey);
 };
 
 /**
@@ -36,8 +34,12 @@ const _getApiKey = async (clientId) => {
  * @param {Buffer} apiKey - api key
  */
 const _setApiKey = async (clientId, apiKey) => {
-    apiKey = Buffer.from(apiKey);
-    await KeyInfoModel.updateOne({ clientId: clientId }, { currApiKey: apiKey }, { upsert: true });
+    await oatcrypto.makeKeyStore(clientId);
+
+    await fs.promises.writeFile(
+        `${oatcrypto.KEY_STORE}/${clientId}/api.key`,
+        Buffer.from(apiKey)
+    );
 };
 
 /**

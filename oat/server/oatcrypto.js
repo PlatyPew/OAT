@@ -2,8 +2,6 @@ const sodium = require("libsodium-wrappers");
 const crypto = require("crypto");
 const fs = require("fs");
 
-const { KeyInfoModel } = require("./KeyModel");
-
 const KEY_STORE = `${process.env.HOME || "."}/.oatkeys`;
 
 /**
@@ -120,10 +118,10 @@ const _setSigningKey = async (domain, signingKey) => {
  * @returns {Promise<Uint8Array>} verification key
  */
 const _getVerifyingKey = async (clientId) => {
-    const keystore = await KeyInfoModel.findOne({ clientId: clientId });
-    if (keystore === null) return null;
+    await checkKeyStore(clientId);
 
-    return new Uint8Array(keystore.verifyingKey);
+    const verifyingKey = await fs.promises.readFile(`${KEY_STORE}/${clientId}/verifying.key`);
+    return new Uint8Array(_decryptKey(verifyingKey));
 };
 
 /**
@@ -134,11 +132,11 @@ const _getVerifyingKey = async (clientId) => {
  * @param {Uint8Array} verifyingKey - verification key
  */
 const _setVerifyingKey = async (clientId, verifyingKey) => {
-    verifyingKey = Buffer.from(verifyingKey);
-    await KeyInfoModel.updateOne(
-        { clientId: clientId },
-        { verifyingKey: verifyingKey },
-        { upsert: true }
+    await makeKeyStore(clientId);
+
+    await fs.promises.writeFile(
+        `${KEY_STORE}/${clientId}/verifying.key`,
+        _encryptKey(Buffer.from(verifyingKey))
     );
 };
 
@@ -232,10 +230,10 @@ const _getSharedKeyClient = async (domain) => {
  * @returns {Promise<Uint8Array>} shared key
  */
 const _getSharedKeyServer = async (clientId) => {
-    const keystore = await KeyInfoModel.findOne({ clientId: clientId });
-    if (keystore === null) return null;
+    await checkKeyStore(clientId);
 
-    return new Uint8Array(keystore.sharedKey);
+    const sharedEncKey = await fs.promises.readFile(`${KEY_STORE}/${clientId}/shared.key`);
+    return new Uint8Array(_decryptKey(sharedEncKey));
 };
 
 /**
@@ -259,12 +257,9 @@ const _setSharedKeyClient = async (domain, sharedKey) => {
  * @param {Uint8Array} sharedKey - shared key
  */
 const _setSharedKeyServer = async (clientId, sharedKey) => {
-    sharedKey = Buffer.from(sharedKey);
-    await KeyInfoModel.updateOne(
-        { clientId: clientId },
-        { sharedKey: sharedKey },
-        { upsert: true }
-    );
+    await makeKeyStore(clientId);
+
+    await fs.promises.writeFile(`${KEY_STORE}/${clientId}/shared.key`, _encryptKey(sharedKey));
 };
 
 /**

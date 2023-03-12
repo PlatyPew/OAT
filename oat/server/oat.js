@@ -36,10 +36,7 @@ const _getApiKey = async (clientId) => {
 const _setApiKey = async (clientId, apiKey) => {
     await oatcrypto.makeKeyStore(clientId);
 
-    await fs.promises.writeFile(
-        `${oatcrypto.KEY_STORE}/${clientId}/api.key`,
-        Buffer.from(apiKey)
-    );
+    await fs.promises.writeFile(`${oatcrypto.KEY_STORE}/${clientId}/api.key`, Buffer.from(apiKey));
 };
 
 /**
@@ -246,12 +243,13 @@ const rollTokenServer = async (token, newFields) => {
  *
  * @param {function} initConn - function that returns response token from server
  *     @param {Promise<string>} initial request token
+ *     @returns {Promise<string>} response token from server
  */
 const initTokenClient = async (domain, initConn) => {
     await oatcrypto.initClientKeys(domain, async (ourBoxPubKey, ourSignPubKey) => {
-        const token = (await initConn(Buffer.concat([ourBoxPubKey, ourSignPubKey]))).toString(
-            "base64"
-        );
+        const token = (
+            await initConn(Buffer.concat([ourBoxPubKey, ourSignPubKey]).toString("base64"))
+        ).toString("base64");
 
         const { key } = _parseResponseToken(token);
 

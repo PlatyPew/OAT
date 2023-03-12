@@ -14,9 +14,9 @@
     "https://*/*",
     "http://*/*"
   ],
-  "content_security_policy": "default-src 'self' 'wasm-unsafe-eval'; connect-src 'self' 'wasm-unsafe-eval'",
+  "content_security_policy": "default-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://*",
   "background": {
-    "page": "index.html",
+    "scripts": ["bundle.js"],
     "persistent": true
   }
 }

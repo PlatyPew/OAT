@@ -1,7 +1,6 @@
-//browserify background.js -o backgroundNode.js
+//browserify background.js -o bundle.js
 
-const oat = require("./oat").client;
-const oatcrypto = require("./oatcrypto");
+const oatclient = require("./oat").client;
 
 function insertHeader(headers, name, value) {
     headers.push({name, value});
@@ -10,26 +9,27 @@ function insertHeader(headers, name, value) {
 function _readToken(headers) {
     for (var i = 0; i < headers.length; i++) {
         if (headers[i].name == "OAT") {
-            return headers[i].value;
+            return { token:headers[i].value, init:false };
+        }
+        else if (headers[i].name == "OATINIT") {
+            return { value:headers[i].value, init:true };
         }
       }
+      return { token:undefined, init:undefined };
 }
-
-function _updateToken(token) {}
-
-function _genToken() {}
-
-count = 0;
 
 (async () => {
     await require("libsodium-wrappers").ready;
 
+    // HTTP Request before sending
     chrome.webRequest.onBeforeSendHeaders.addListener(
         function(details) {
             // check if domain exist in localStorage
-            console.log(details.url);
+            let domain = (new URL(details.url)).hostname;
+
+            const newToken = decryptNextTokenClient(domain);
     
-            // insertHeader(details.requestHeaders,"OAT", "12345");
+            insertHeader(details.requestHeaders,"OAT", newToken);
             return {requestHeaders: details.requestHeaders};
         },
         // filters
@@ -38,16 +38,46 @@ count = 0;
         ['blocking', 'requestHeaders', 'extraHeaders']
     );
     
+    // HTTP Response recevied
     chrome.webRequest.onHeadersReceived.addListener(
         function(details) {
             // check if domain exist in localStorage
-            console.log(details.url);
+            const domain = (new URL(details.url)).hostname;''
     
-            token = _readToken(details.responseHeaders);
+            const { token, init } = _readToken(details.responseHeaders);
     
             if (token == undefined) return;
-    
-            
+
+            if (init) {
+            // if (true) {
+                const protocol = (new URL(details.url)).protocol;
+                const pathname = (new URL(details.url)).pathname;
+
+                const url = `${protocol}//${domain}${pathname}/get`;
+                console.log(url);
+
+                oatclient.initToken(domain, async(ourBoxSignPubKey) => {
+                    var promise = new Promise(function(resolve, reject) {
+                        var xhr = new XMLHttpRequest();
+                        xhr.open("GET", url);
+                        xhr.setRequestHeader("OAT", ourBoxSignPubKey);
+                        xhr.onload = function() {
+                            if(xhr.status == 200) {
+                                resolve(xhr.getResponseHeader("OAT"));
+                            }
+                            else {
+                                reject();
+                            }
+                            console.log(xhr.getAllResponseHeaders());
+                        }
+                        xhr.send();
+                    });
+                    return promise;
+                });
+            }
+            else {
+                oatclient.setToken(domain, token);
+            }
     
             return {responseHeaders: details.responseHeaders};
         },
@@ -58,6 +88,4 @@ count = 0;
     );
 })();
 
-
-
-console.log("end2")
+console.log("end");

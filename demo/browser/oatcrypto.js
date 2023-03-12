@@ -1,14 +1,12 @@
 const sodium = require("libsodium-wrappers");
-const crypto = require("crypto");
-
-const KEY_STORE = `${process.env.HOME || "HI"}/.oatkeys`;
+const browserCrypto = require("browser-crypto");
+const randomBytes = require('randombytes');
+const {sha3_256} = require('js-sha3');
 
 /**
  * creates necessary directories for key storage and initialise OAT_PASS
  */
-// if (!process.env.OAT_PASS || process.env.OAT_PASS.length < 16)
-//     throw new Error("OAT_PASS should be at least 16 characters long");
-const OAT_PASS = crypto.createHash("sha3-256").update("123").digest();
+const OAT_PASS = sha3_256.update('123').hex();
 
 const setLocalStorage = (clientId, name, value) => {
     let clientObj = JSON.parse(localStorage.getItem(clientId));
@@ -35,18 +33,24 @@ const getLocalStorage = (clientId, name) => {
     }
 }
 
+const _bufferToHex =  (buffer) => { // buffer is an ArrayBuffer
+    return [...new Uint8Array(buffer)]
+        .map(x => x.toString(16).padStart(2, '0'))
+        .join('');
+}
+
 /**
  * signs api key with client private key
  *
  * @async
- * @param {string} clientId - client id of shared key
+ * @param {string} domain - domain
  * @param {Object} data - api key and domain to sign
  *     @param {Buffer} data.apiKey - the api key to sign
  *     @param {string} data.apiKey - the api key to sign
  * @returns {Promise<Buffer>} signature and data
  */
-const sign = async (clientId, { apiKey, domain }) => {
-    const privKey = await _getSigningKey(clientId);
+const sign = async (domainName, { apiKey, domain }) => {
+    const privKey = await _getSigningKey(domainName);
 
     const unsignedData = Buffer.concat([apiKey, Buffer.from(domain)]);
     const signature = sodium.crypto_sign(unsignedData, privKey);
@@ -58,12 +62,12 @@ const sign = async (clientId, { apiKey, domain }) => {
  * read and decrypt signing key
  *
  * @async
- * @param {string} clientId - client id
+ * @param {string} domain - domain
  * @returns {Promise<Uint8Array>} signing key
  */
-const _getSigningKey = async (clientId) => {
+const _getSigningKey = async (domain) => {
     const signingKey = getLocalStorage(clientId,"sharedKey");
-    
+
     return new Uint8Array(_decryptKey(signingKey));
 };
 
@@ -71,10 +75,10 @@ const _getSigningKey = async (clientId) => {
  * encrypts and saves signing key
  *
  * @async
- * @param {string} clientId - client id
- * @param {Promise<Uint8Array>} signingKey - signing key
+ * @param {string} domain - domain
+ * @param {Uint8Array} signingKey - signing key
  */
-const _setSigningKey = async (clientId, signingKey) => {
+const _setSigningKey = async (domain, signingKey) => {
     setLocalStorage(clientId, "signingKey", signingKey);
 };
 
@@ -82,16 +86,16 @@ const _setSigningKey = async (clientId, signingKey) => {
  * decrypt api key using shared key
  *
  * @async
- * @param {string} clientId - client id of shared key
+ * @param {string} domain - domain name
  * @param {Buffer} encApiKey - encrypted api key
  * @returns {Promise<Buffer>} decrypted api key
  */
-const decrypt = async (clientId, encApiKey) => {
-    const sharedKey = await _getSharedKey(clientId);
+const decrypt = async (domain, encApiKey) => {
+    const sharedKey = await _getSharedKeyClient(domain);
 
     const iv = encApiKey.slice(0, 12);
     const enc = encApiKey.slice(12);
-    const decipher = crypto.createDecipheriv("aes-256-gcm", sharedKey, iv);
+    const decipher = browserCrypto.createDecipheriv("aes-256-gcm", sharedKey, iv);
     let dec = decipher.update(enc);
 
     return dec;
@@ -104,8 +108,8 @@ const decrypt = async (clientId, encApiKey) => {
  * @returns {Buffer} encrypted key
  */
 const _encryptKey = (decKey) => {
-    const iv = crypto.randomBytes(12);
-    const cipher = crypto.createCipheriv("aes-256-gcm", Buffer.from(OAT_PASS), iv);
+    const iv = randomBytes(12);
+    const cipher = browserCrypto.createCipheriv("aes-256-gcm", Buffer.from(OAT_PASS), iv);
     let enc = cipher.update(decKey);
     cipher.final();
 
@@ -121,33 +125,34 @@ const _encryptKey = (decKey) => {
 const _decryptKey = (encKey) => {
     const iv = encKey.slice(0, 12);
     const enc = encKey.slice(12);
-    const decipher = crypto.createDecipheriv("aes-256-gcm", Buffer.from(OAT_PASS), iv);
+    const decipher = browserCrypto.createDecipheriv("aes-256-gcm", Buffer.from(OAT_PASS), iv);
     let dec = decipher.update(enc);
 
     return new Uint8Array(dec);
 };
 
 /**
- * gets and decrypts shared key
+ * gets and decrypts shared key server
  *
  * @async
- * @param {string} clientId - client id
+ * @param {string} domain - domain
  * @returns {Promise<Uint8Array>} shared key
  */
-const _getSharedKey = async (clientId) => {
-    const sharedEncKey = getLocalStorage(clientId,"sharedKey");
+const _getSharedKeyClient = async (domain) => {
+    const sharedEncKey = getLocalStorage(domain,"sharedKey");
+
     return _decryptKey(sharedEncKey);
 };
 
 /**
- * encrypts and saves shared key
+ * encrypts and saves shared key client
  *
  * @async
- * @param {string} clientId - client id
- * @param {Promise<Uint8Array>} sharedKey - shared key
+ * @param {string} domain - domain
+ * @param {Uint8Array} sharedKey - shared key
  */
-const _setSharedKey = async (clientId, sharedKey) => {
-    setLocalStorage(clientId,"sharedKey", sharedKey);
+const _setSharedKeyClient = async (domain, sharedKey) => {
+    setLocalStorage(domain,"sharedKey", sharedKey);
 };
 
 /**
@@ -164,11 +169,8 @@ const _genSharedKey = async (theirPubKey, myKeyPair) => {
     const ourPrivKey = myKeyPair.privateKey;
 
     const sharedKey = sodium.crypto_scalarmult(ourPrivKey, theirPubKey);
-    const clientId = crypto.createHash("sha1").update(sharedKey).digest("hex").toUpperCase();
 
-    await _setSharedKey(clientId, sharedKey);
-
-    return clientId;
+    return { sharedKey };
 };
 
 /**
@@ -176,7 +178,7 @@ const _genSharedKey = async (theirPubKey, myKeyPair) => {
  *
  * @param {function} getTheirBoxPubKeyFunc - anon function to get server box public key
  */
-const initClientKeys = async (getTheirBoxPubKeyFunc) => {
+const initClientKeys = async (domain, getTheirBoxPubKeyFunc) => {
     const myBoxKeyPair = sodium.crypto_box_keypair();
     const mySignKeyPair = sodium.crypto_sign_keypair();
 
@@ -187,12 +189,13 @@ const initClientKeys = async (getTheirBoxPubKeyFunc) => {
         )
     );
 
-    const clientId = await _genSharedKey(theirBoxPubKey, myBoxKeyPair);
-    await _setSigningKey(clientId, mySignKeyPair.privateKey);
+    const { sharedKey } = await _genSharedKey(theirBoxPubKey, myBoxKeyPair);
+
+    await _setSharedKeyClient(domain, sharedKey);
+    await _setSigningKey(domain, mySignKeyPair.privateKey);
 };
 
 module.exports = {
-    KEY_STORE: KEY_STORE,
     OAT_PASS: OAT_PASS,
 
     sign: sign,
@@ -203,8 +206,8 @@ module.exports = {
 
     _getSigningKey: _getSigningKey,
     _setSigningKey: _setSigningKey,
-    _getSharedKey: _getSharedKey,
-    _setSharedKey: _setSharedKey,
+    _getSharedKeyClient: _getSharedKeyClient,
+    _setSharedKeyClient: _setSharedKeyClient,
     _encryptKey: _encryptKey,
     _decryptKey: _decryptKey,
 };

@@ -9,6 +9,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "libsodium-wrappers": "^0.7.11"
+    "browser-crypto": "^2.0.0",
+    "js-sha3": "^0.8.0",
+    "libsodium-wrappers": "^0.7.11",
+    "randombytes": "^2.1.0"
   }
 }

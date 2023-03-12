@@ -1,5 +1,6 @@
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 
 const oat = require("./oat").server;
 
@@ -28,6 +29,7 @@ const init = async (req, res, next) => {
 
         const responseToken = await oat.initToken(requestToken, {});
         res.setHeader("OAT", responseToken);
+        res.send();
     } catch {
         res.status(400).json({ response: "Invalid Token" });
     }
@@ -35,13 +37,21 @@ const init = async (req, res, next) => {
     return next();
 };
 
-const authenticate = (req, res, next) => {
+const createOatPath = () => {
     // Create a file on the system which begins the init process
-    /* console.log(req.get("OAT")); */
-    next();
+    const rng = crypto.randomBytes(32).toString("hex");
+    const pathToOat = `${TMP_DIR}/${rng}`;
+
+    fs.writeFile(pathToOat, "", () => {
+        setTimeout(() => {
+            fs.promises.unlink(pathToOat);
+        }, 15000);
+    });
+
+    return `/oat/${rng}`;
 };
 
 module.exports = {
     init: init,
-    authenticate: authenticate,
+    createOatPath: createOatPath,
 };

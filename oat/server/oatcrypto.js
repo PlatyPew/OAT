@@ -19,13 +19,13 @@ if (!fs.existsSync(KEY_STORE)) fs.mkdirSync(KEY_STORE);
  * makes directory if it does not exist
  *
  * @async
- * @param {Promise<string>} clientId - client id
+ * @param {Promise<string>} domain - domain
  */
-const makeKeyStore = async (clientId) => {
+const makeKeyStore = async (domain) => {
     try {
-        await fs.promises.access(`${KEY_STORE}/${clientId}`, fs.constants.F_OK);
+        await fs.promises.access(`${KEY_STORE}/${domain}`, fs.constants.F_OK);
     } catch {
-        await fs.promises.mkdir(`${KEY_STORE}/${clientId}`);
+        await fs.promises.mkdir(`${KEY_STORE}/${domain}`);
     }
 };
 
@@ -33,11 +33,11 @@ const makeKeyStore = async (clientId) => {
  * checks if directory exists
  *
  * @async
- * @param {Promise<string>} clientId - client id
+ * @param {Promise<string>} domain - domain
  */
-const checkKeyStore = async (clientId) => {
+const checkKeyStore = async (domain) => {
     try {
-        await fs.promises.access(`${KEY_STORE}/${clientId}`, fs.constants.F_OK);
+        await fs.promises.access(`${KEY_STORE}/${domain}`, fs.constants.F_OK);
     } catch {
         throw new Error("Key directory not found");
     }
@@ -47,14 +47,14 @@ const checkKeyStore = async (clientId) => {
  * signs api key with client private key
  *
  * @async
- * @param {string} clientId - client id of shared key
+ * @param {string} domain - domain
  * @param {Object} data - api key and domain to sign
  *     @param {Buffer} data.apiKey - the api key to sign
  *     @param {string} data.apiKey - the api key to sign
  * @returns {Promise<Buffer>} signature and data
  */
-const sign = async (clientId, { apiKey, domain }) => {
-    const privKey = await _getSigningKey(clientId);
+const sign = async (domainName, { apiKey, domain }) => {
+    const privKey = await _getSigningKey(domainName);
 
     const unsignedData = Buffer.concat([apiKey, Buffer.from(domain)]);
     const signature = sodium.crypto_sign(unsignedData, privKey);
@@ -86,13 +86,13 @@ const verify = async (clientId, signedData) => {
  * read and decrypt signing key
  *
  * @async
- * @param {string} clientId - client id
+ * @param {string} domain - domain
  * @returns {Promise<Uint8Array>} signing key
  */
-const _getSigningKey = async (clientId) => {
-    await checkKeyStore(clientId);
+const _getSigningKey = async (domain) => {
+    await checkKeyStore(domain);
 
-    const signingKey = await fs.promises.readFile(`${KEY_STORE}/${clientId}/signing.key`);
+    const signingKey = await fs.promises.readFile(`${KEY_STORE}/${domain}/signing.key`);
     return new Uint8Array(_decryptKey(signingKey));
 };
 
@@ -100,14 +100,14 @@ const _getSigningKey = async (clientId) => {
  * encrypts and saves signing key
  *
  * @async
- * @param {string} clientId - client id
+ * @param {string} domain - domain
  * @param {Uint8Array} signingKey - signing key
  */
-const _setSigningKey = async (clientId, signingKey) => {
-    await makeKeyStore(clientId);
+const _setSigningKey = async (domain, signingKey) => {
+    await makeKeyStore(domain);
 
     await fs.promises.writeFile(
-        `${KEY_STORE}/${clientId}/signing.key`,
+        `${KEY_STORE}/${domain}/signing.key`,
         _encryptKey(Buffer.from(signingKey))
     );
 };
@@ -146,12 +146,12 @@ const _setVerifyingKey = async (clientId, verifyingKey) => {
  * encrypt api key using shared key
  *
  * @async
- * @param {string} clientId - client id of shared key
+ * @param {string} clientId - client id
  * @param {Buffer} apiKey - api key
  * @returns {Promise<Buffer>} encrypted api key
  */
 const encrypt = async (clientId, apiKey) => {
-    const sharedKey = await _getSharedKey(clientId);
+    const sharedKey = await _getSharedKeyServer(clientId);
 
     const iv = crypto.randomBytes(12);
     const cipher = crypto.createCipheriv("aes-256-gcm", sharedKey, iv);
@@ -165,12 +165,12 @@ const encrypt = async (clientId, apiKey) => {
  * decrypt api key using shared key
  *
  * @async
- * @param {string} clientId - client id of shared key
+ * @param {string} domain - domain name
  * @param {Buffer} encApiKey - encrypted api key
  * @returns {Promise<Buffer>} decrypted api key
  */
-const decrypt = async (clientId, encApiKey) => {
-    const sharedKey = await _getSharedKey(clientId);
+const decrypt = async (domain, encApiKey) => {
+    const sharedKey = await _getSharedKeyClient(domain);
 
     const iv = encApiKey.slice(0, 12);
     const enc = encApiKey.slice(12);
@@ -211,13 +211,27 @@ const _decryptKey = (encKey) => {
 };
 
 /**
- * gets and decrypts shared key
+ * gets and decrypts shared key server
+ *
+ * @async
+ * @param {string} domain - domain
+ * @returns {Promise<Uint8Array>} shared key
+ */
+const _getSharedKeyClient = async (domain) => {
+    await checkKeyStore(domain);
+
+    const sharedEncKey = await fs.promises.readFile(`${KEY_STORE}/${domain}/shared.key`);
+    return _decryptKey(sharedEncKey);
+};
+
+/**
+ * gets and decrypts shared key server
  *
  * @async
  * @param {string} clientId - client id
  * @returns {Promise<Uint8Array>} shared key
  */
-const _getSharedKey = async (clientId) => {
+const _getSharedKeyServer = async (clientId) => {
     const keystore = await KeyInfoModel.findOne({ clientId: clientId });
     if (keystore === null) return null;
 
@@ -225,13 +239,26 @@ const _getSharedKey = async (clientId) => {
 };
 
 /**
- * encrypts and saves shared key
+ * encrypts and saves shared key client
+ *
+ * @async
+ * @param {string} domain - domain
+ * @param {Uint8Array} sharedKey - shared key
+ */
+const _setSharedKeyClient = async (domain, sharedKey) => {
+    await makeKeyStore(domain);
+
+    await fs.promises.writeFile(`${KEY_STORE}/${domain}/shared.key`, _encryptKey(sharedKey));
+};
+
+/**
+ * encrypts and saves shared key server
  *
  * @async
  * @param {string} clientId - client id
  * @param {Uint8Array} sharedKey - shared key
  */
-const _setSharedKey = async (clientId, sharedKey) => {
+const _setSharedKeyServer = async (clientId, sharedKey) => {
     sharedKey = Buffer.from(sharedKey);
     await KeyInfoModel.updateOne(
         { clientId: clientId },
@@ -256,9 +283,7 @@ const _genSharedKey = async (theirPubKey, myKeyPair) => {
     const sharedKey = sodium.crypto_scalarmult(ourPrivKey, theirPubKey);
     const clientId = crypto.createHash("sha1").update(sharedKey).digest("hex").toUpperCase();
 
-    await _setSharedKey(clientId, sharedKey);
-
-    return clientId;
+    return { clientId, sharedKey };
 };
 
 /**
@@ -266,7 +291,7 @@ const _genSharedKey = async (theirPubKey, myKeyPair) => {
  *
  * @param {function} getTheirBoxPubKeyFunc - anon function to get server box public key
  */
-const initClientKeys = async (getTheirBoxPubKeyFunc) => {
+const initClientKeys = async (domain, getTheirBoxPubKeyFunc) => {
     const myBoxKeyPair = sodium.crypto_box_keypair();
     const mySignKeyPair = sodium.crypto_sign_keypair();
 
@@ -277,8 +302,10 @@ const initClientKeys = async (getTheirBoxPubKeyFunc) => {
         )
     );
 
-    const clientId = await _genSharedKey(theirBoxPubKey, myBoxKeyPair);
-    await _setSigningKey(clientId, mySignKeyPair.privateKey);
+    const { sharedKey } = await _genSharedKey(theirBoxPubKey, myBoxKeyPair);
+
+    await _setSharedKeyClient(domain, sharedKey);
+    await _setSigningKey(domain, mySignKeyPair.privateKey);
 };
 
 /**
@@ -295,7 +322,9 @@ const initServerKeys = async (theirBoxPubKey, theirSignPubKey) => {
     theirSignPubKey = new Uint8Array(theirSignPubKey);
 
     const myBoxKeyPair = sodium.crypto_box_keypair();
-    const clientId = await _genSharedKey(theirBoxPubKey, myBoxKeyPair);
+    const { clientId, sharedKey } = await _genSharedKey(theirBoxPubKey, myBoxKeyPair);
+
+    await _setSharedKeyServer(clientId, sharedKey);
     await _setVerifyingKey(clientId, theirSignPubKey);
 
     return { clientId, ourBoxPubKey: Buffer.from(myBoxKeyPair.publicKey) };
@@ -330,8 +359,10 @@ module.exports = {
     _setSigningKey: _setSigningKey,
     _getVerifyingKey: _getVerifyingKey,
     _setVerifyingKey: _setVerifyingKey,
-    _getSharedKey: _getSharedKey,
-    _setSharedKey: _setSharedKey,
+    _getSharedKeyClient: _getSharedKeyClient,
+    _setSharedKeyClient: _setSharedKeyClient,
+    _getSharedKeyServer: _getSharedKeyServer,
+    _setSharedKeyServer: _setSharedKeyServer,
     _encryptKey: _encryptKey,
     _decryptKey: _decryptKey,
 };

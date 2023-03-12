@@ -44,13 +44,13 @@ const _setApiKey = async (clientId, apiKey) => {
  * get api token
  *
  * @async
- * @param {string} clientId - client id
+ * @param {string} domain - domain
  * @returns {Promise<string>} api token
  */
-const _getToken = async (clientId) => {
-    await oatcrypto.checkKeyStore(clientId);
+const _getToken = async (domain) => {
+    await oatcrypto.checkKeyStore(domain);
 
-    return (await fs.promises.readFile(`${oatcrypto.KEY_STORE}/${clientId}/token`)).toString();
+    return (await fs.promises.readFile(`${oatcrypto.KEY_STORE}/${domain}/token`)).toString();
 };
 
 /**
@@ -64,42 +64,6 @@ const _setToken = async (clientId, token) => {
     await oatcrypto.makeKeyStore(clientId);
 
     fs.promises.writeFile(`${oatcrypto.KEY_STORE}/${clientId}/token`, token);
-};
-
-/**
- * get client id by domain
- *
- * @async
- * @param {string} domain - domain of server
- * @returns {Promise<string>} client id
- */
-const _getDomainDB = async (domain) => {
-    try {
-        await fs.promises.access(`${oatcrypto.KEY_STORE}/domain.json`, fs.constants.F_OK);
-        return JSON.parse(await fs.promises.readFile(`${oatcrypto.KEY_STORE}/domain.json`))[domain];
-    } catch (err) {
-        return "";
-    }
-};
-
-/**
- * saves client id by domain
- *
- * @async
- * @param {string} domain - domain of server
- * @param {string} clientId - client id
- */
-const _setDomainDB = async (domain, clientId) => {
-    let keyValue = { [domain]: clientId };
-
-    try {
-        await fs.promises.access(`${oatcrypto.KEY_STORE}/domain.json`, fs.constants.F_OK);
-
-        keyValue = JSON.parse(fs.promises.readFile(`${oatcrypto.KEY_STORE}/domain.json`));
-        keyValue[domain] = clientId;
-    } catch {}
-
-    fs.promises.writeFile(`${oatcrypto.KEY_STORE}/domain.json`, JSON.stringify(keyValue));
 };
 
 /**
@@ -235,16 +199,15 @@ const authToken = async (serverDomain, token) => {
  *     @param {string} request token
  */
 const rollTokenClient = async (domain, initConn) => {
-    const clientId = await _getDomainDB(domain);
-    const token = await _getToken(clientId);
+    const token = await _getToken(domain);
     const { key } = _parseResponseToken(token);
 
-    const apiKey = await oatcrypto.decrypt(clientId, key.encApiKey);
-    const sigApiKey = await oatcrypto.sign(clientId, { apiKey, domain });
+    const apiKey = await oatcrypto.decrypt(domain, key.encApiKey);
+    const sigApiKey = await oatcrypto.sign(domain, { apiKey, domain });
 
     const newToken = await initConn(`${sigApiKey.toString("base64")}|${token.split("|")[1]}`);
 
-    await _setToken(clientId, newToken);
+    await _setToken(domain, newToken);
 };
 
 /**
@@ -283,16 +246,14 @@ const rollTokenServer = async (token, newFields) => {
  *     @param {Promise<string>} initial request token
  */
 const initTokenClient = async (domain, initConn) => {
-    await oatcrypto.initClientKeys(async (ourBoxPubKey, ourSignPubKey) => {
+    await oatcrypto.initClientKeys(domain, async (ourBoxPubKey, ourSignPubKey) => {
         const token = (await initConn(Buffer.concat([ourBoxPubKey, ourSignPubKey]))).toString(
             "base64"
         );
 
-        const { key, data } = _parseResponseToken(token);
-        const { clientId } = data;
+        const { key } = _parseResponseToken(token);
 
-        await _setToken(clientId, token);
-        await _setDomainDB(domain, clientId);
+        await _setToken(domain, token);
 
         return key.serverBoxPubKey;
     });

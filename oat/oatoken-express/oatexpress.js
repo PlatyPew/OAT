@@ -33,7 +33,7 @@ const initpath = (_, res, next) => {
  *
  * @async
  */
-const init = async (req, res, next) => {
+const init = (initFields) => async (req, res, next) => {
     const dirname = path.dirname(req.path);
     const basename = path.basename(req.path);
 
@@ -52,7 +52,7 @@ const init = async (req, res, next) => {
     try {
         await fs.promises.unlink(`${TMP_DIR}/${basename}`);
 
-        const responseToken = await oat.initToken(requestToken, {});
+        const responseToken = await oat.initToken(requestToken, initFields);
         res.setHeader("OAT", responseToken);
         res.json({ response: true });
     } catch {

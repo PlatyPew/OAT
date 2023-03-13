@@ -2,6 +2,8 @@ const sodium = require("libsodium-wrappers");
 const crypto = require("crypto");
 const fs = require("fs");
 
+require("dotenv").config();
+
 const KEY_STORE = `${process.env.HOME || "."}/.oatkeys`;
 
 /**

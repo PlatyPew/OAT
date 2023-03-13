@@ -1,19 +1,28 @@
 {
-  "name": "oat",
+  "name": "oatoken",
   "version": "1.0.0",
-  "description": "PoC rolling API key",
+  "description": "A rolling api key powered by crypto",
   "main": "oat.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/PlatyPew/OAT.git"
   },
-  "author": "",
-  "license": "MIT",
+  "keywords": [
+    "api",
+    "token",
+    "oat"
+  ],
+  "author": "PlatyPew",
+  "license": "LGPL-3.0-or-later",
   "bugs": {
     "url": "https://github.com/PlatyPew/OAT/issues"
   },
   "homepage": "https://github.com/PlatyPew/OAT#readme",
   "dependencies": {
+    "dotenv": "^16.0.3",
     "libsodium-wrappers": "^0.7.11"
   }
 }

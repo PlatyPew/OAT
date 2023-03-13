@@ -1,202 +1,342 @@
 const crypto = require("crypto");
-const gpg = require("./gpg");
+const fs = require("fs");
+
+const oatcrypto = require("./oatcrypto");
 
 /**
- * gets oat password from environment variable
+ * generates random 256-bits
  *
- * @returns {string} oat password to use
- */
-const _oatPass = () => {
-    const oatPass = process.env.OAT_PASS;
-
-    if (oatPass === undefined) throw new Error("Environment variable OAT_PASS is not set");
-    if (oatPass.length !== 32) throw new Error("Password shoud be at 32 bytes long");
-
-    return oatPass;
-};
-
-/**
- * generates random 512-bits
- *
- * @returns {bytes} 64 random bytes
+ * @returns {Buffer} 32 random bytes
  */
 const _genRNG = () => {
-    return crypto.randomBytes(64);
+    return crypto.randomBytes(32);
 };
 
 /**
- * splits token into relevant fields
+ * get the api key by client id
  *
- * @param {string} token - token that client sends
- * @returns {json} object of signedKey, fields and hmac
+ * @async
+ * @param {string} clientId - client id
+ * @returns {Promise<Buffer>} api key
  */
-const _splitToken = (token) => {
-    const [signedKeyB64, data] = token.split("-");
-    const [fieldsB64, hmacB64] = data.split("|");
+const _getApiKey = async (clientId) => {
+    await oatcrypto.checkKeyStore(clientId);
 
-    const signedKey = Buffer.from(signedKeyB64, "base64");
-    const fields = JSON.parse(Buffer.from(fieldsB64, "base64"));
-    const hmac = Buffer.from(hmacB64, "base64");
-
-    return { signedKey, fields, hmac };
+    const apiKey = await fs.promises.readFile(`${oatcrypto.KEY_STORE}/${clientId}/api.key`);
+    return new Uint8Array(apiKey);
 };
 
 /**
- * adds key id to data section
+ * saves the api key
  *
- * @param {string} keyId - public key id
- * @param {json} fields - session data fields
- * @returns {json} session data fields with appended public key ID
+ * @async
+ * @param {string} clientId - client id
+ * @param {Buffer} apiKey - api key
  */
-const _insertKeyID = (keyId, fields) => {
-    if (fields.hasOwnProperty("pubkeyid")) throw new Error('Cannot Use "pubkeyid" As Key');
+const _setApiKey = async (clientId, apiKey) => {
+    await oatcrypto.makeKeyStore(clientId);
 
-    fields.pubkeyid = keyId;
-    return fields;
+    await fs.promises.writeFile(`${oatcrypto.KEY_STORE}/${clientId}/api.key`, Buffer.from(apiKey));
 };
 
 /**
- * removes key ID from data section
+ * get api token
  *
- * @param {json} fields - session data fields
- * @returns {json} session data fields with removed public key ID
+ * @async
+ * @param {string} domain - domain
+ * @returns {Promise<string>} api token
  */
-const _stripKeyID = (fields) => {
-    if (!fields.hasOwnProperty("pubkeyid")) throw new Error("Public Key ID Not Found");
+const _getToken = async (domain) => {
+    await oatcrypto.checkKeyStore(domain);
 
-    delete fields.pubkeyid;
-    return fields;
+    return (await fs.promises.readFile(`${oatcrypto.KEY_STORE}/${domain}/token`)).toString();
 };
 
 /**
- * get session data from token (does not check for integrity)
+ * saves api token
  *
- * @param {string} token - token that is sent from the client
- * @returns {json} session data extracted from the token
+ * @async
+ * @param {string} clientId - client id
+ * @param {string} token - api token
  */
-const getSessionData = (token) => {
-    const { fields } = _splitToken(token);
-    return _stripKeyID(fields);
+const _setToken = async (clientId, token) => {
+    await oatcrypto.makeKeyStore(clientId);
+
+    fs.promises.writeFile(`${oatcrypto.KEY_STORE}/${clientId}/token`, token);
 };
 
 /**
- * performs hmac on session data fields to prevent tampering
+ * hmacs the session data
  *
- * @param {bytes} key - key of current token
- * @param {json} fields - session data to perform hmac
- * @returns {string} concatenated json data and hmac in base64
+ * @param {string} clientId - client id
+ * @param {Buffer} apiKey - api key
+ * @param {Object} fields - session data
+ * @returns {Buffer} hmac
  */
-const _signSessionData = (key, fields) => {
+const _hmacSessionData = (clientId, apiKey, fields) => {
+    const clientIdBytes = Buffer.from(clientId, "hex");
     const fieldBytes = Buffer.from(JSON.stringify(fields));
 
-    const hmacB64 = crypto
-        .createHmac("sha3-512", _oatPass())
+    const hmac = crypto
+        .createHmac("sha3-256", oatcrypto.OAT_PASS)
+        .update(clientIdBytes)
         .update(fieldBytes)
-        .update(key)
-        .digest("base64");
-
-    const fieldB64 = fieldBytes.toString("base64");
-
-    return `${fieldB64}|${hmacB64}`;
-};
-
-/**
- * ensures session data fields have not been tampered
- *
- * @param {bytes} key - key of current token
- * @param {json} fields - session data fields
- * @param {bytes} hmac - hmac on session data
- * @returns {boolean} check if session data fields has been tampered
- */
-const _verifySessionData = (key, fields, hmac) => {
-    const fieldBytes = Buffer.from(JSON.stringify(fields));
-
-    const calculatedHmac = crypto
-        .createHmac("sha3-512", _oatPass())
-        .update(fieldBytes)
-        .update(key)
+        .update(apiKey)
         .digest();
 
-    return Buffer.compare(calculatedHmac, hmac) === 0;
+    return hmac;
 };
 
 /**
- * initialise the initial oat key
+ * parse request token into individual parts
  *
- * @param {string} pubKeyB64 - public key in base64
- * @param {json} newfields - new session data fields to update
- * @param {function} cb - callback that returns key id and the next key
- * @returns {string} token to send back to client
+ * @param {string} token - response token
+ * @returns {Object} json data of token
+ *     @param {Object} key - signed api key
+ *      @param {Object} data - footer of token
+ *         @param {Buffer} data.hmac - calculated hmac
+ *         @param {string} data.clientId - client id
+ *         @param {Object} data.fields - session data of token
  */
-const initToken = (pubKeyB64, newFields, cb) => {
-    const pubKeyBytes = Buffer.from(pubKeyB64, "base64");
-    const keyId = gpg.importKey(pubKeyBytes);
+const _parseRequestToken = (token) => {
+    let [key, session] = token.split("|");
+    key = Buffer.from(key, "base64");
+    session = Buffer.from(session, "base64");
 
-    const rng = _genRNG();
-    const nextApiKey = crypto.createHmac("sha3-512", _oatPass()).update(rng).digest();
-    cb(keyId, nextApiKey);
+    const hmac = session.slice(0, 32);
+    const clientId = session.slice(32, 52).toString("hex").toUpperCase();
+    const fields = JSON.parse(session.slice(52));
 
-    const encNextApiKeyB64 = gpg.encrypt(keyId, nextApiKey).toString("base64");
-
-    const fields = _insertKeyID(keyId, newFields);
-    const data = _signSessionData(nextApiKey, fields);
-
-    return `${encNextApiKeyB64}-${data}`;
+    return {
+        key,
+        data: { hmac, clientId, fields },
+    };
 };
 
 /**
- * authenticate the token
+ * parse response token into individual parts
+ *
+ * @param {string} token - response token
+ * @returns {Object} json data of token
+ *     @param {Object} key - header of token
+ *         @param {Buffer} key.serverBoxPubKey - public key from server (null if not initial token)
+ *         @param {Buffer} key.encApiKey - encrypted api key from server
+ *      @param {Object} data - footer of token
+ *         @param {Buffer} data.hmac - calculated hmac
+ *         @param {string} data.clientId - client id
+ *         @param {Object} data.fields - session data of token
+ */
+const _parseResponseToken = (token) => {
+    let [key, session] = token.split("|");
+    key = Buffer.from(key, "base64");
+    session = Buffer.from(session, "base64");
+
+    let serverBoxPubKey = null;
+    let encApiKey = key;
+
+    if (key.length === 76) {
+        serverBoxPubKey = key.slice(0, 32);
+        encApiKey = key.slice(32);
+    }
+
+    const hmac = session.slice(0, 32);
+    const clientId = session.slice(32, 52).toString("hex").toUpperCase();
+    const fields = JSON.parse(session.slice(52));
+
+    return {
+        key: { serverBoxPubKey, encApiKey },
+        data: { hmac, clientId, fields },
+    };
+};
+
+/**
+ * returns session data as json
+ *
+ * @param {string} token - api token
+ * @returns {Object} session data
+ */
+const getSessionData = (token) => {
+    const footer = Buffer.from(token.split("|")[1], "base64");
+    return JSON.parse(footer.slice(52));
+};
+
+/**
+ * update session data of token
  *
  * @async
- * @param {function} getKeyFunc - function to fetch the key from the server
- * @param {string} token - token sent from the client
- * @returns {promise} key id and current key
+ * @param {string} token - response token
+ * @param {Object} newFields - new fields to change
+ * @returns {Promise<string>} updated response token
  */
-const authToken = async (getKeyFunc, token) => {
-    const { signedKey, fields, hmac } = _splitToken(token);
+const setSessionData = async (token, newFields) => {
+    const { data } = _parseResponseToken(token);
+    const { clientId } = data;
 
-    const keyId = fields.pubkeyid;
+    const sessionHmac = _hmacSessionData(clientId, await _getApiKey(clientId), newFields);
 
-    const clientApiKey = gpg.verify(keyId, signedKey);
-    const serverApiKey = await getKeyFunc(keyId);
+    const tokenHeader = token.split("|")[0];
 
-    if (!_verifySessionData(clientApiKey, fields, hmac)) throw new Error("Data Has Been Tampered");
-    if (Buffer.compare(clientApiKey, serverApiKey) !== 0) return false;
+    const tokenFooter = Buffer.concat([
+        sessionHmac, // 32 bytes
+        Buffer.from(clientId, "hex"), // 20 bytes
+        Buffer.from(JSON.stringify(newFields)),
+    ]).toString("base64");
 
-    return { keyId, serverKey: serverApiKey };
+    return `${tokenHeader}|${tokenFooter}`;
 };
 
 /**
- * roll the next key
+ * check if token is authenticated
  *
  * @async
- * @param {function} getKeyFunc - function to fetch the key from the server
- * @param {string} token - tokent sent from the client
- * @param {json} newfields - new session data fields to update
- * @param {function} cb - returns the new key
- * @returns {promise} next encrypted token
+ * @param {string} serverDomain - server domain
+ * @param {string} token - request token
+ * @returns {Promise<boolean>} if authenticated
  */
-const rollToken = async (getKeyFunc, token, newfields, cb) => {
-    const auth = await authToken(getKeyFunc, token);
-    if (!auth) return false;
+const authToken = async (serverDomain, token) => {
+    const { key, data } = _parseRequestToken(token);
+    const { hmac, clientId, fields } = data;
+    let header;
 
-    const { keyId, serverKey } = auth;
+    try {
+        header = await oatcrypto.verify(data.clientId, key);
+    } catch {
+        return false;
+    }
+
+    const apiKey = header.apiKey;
+    const domain = header.domain;
+
+    if (domain !== serverDomain) return false;
+    if (Buffer.compare(hmac, _hmacSessionData(clientId, apiKey, fields))) return false;
+    if (Buffer.compare(apiKey, await _getApiKey(clientId))) return false;
+
+    return true;
+};
+
+/**
+ * generates new token
+ *
+ * @async
+ * @param {string} domain - server domain
+ * @param {function} initConn - initiate connection with server
+ *     @param {string} request token
+ */
+const rollTokenClient = async (domain, initConn) => {
+    const token = await _getToken(domain);
+    const { key } = _parseResponseToken(token);
+
+    const apiKey = await oatcrypto.decrypt(domain, key.encApiKey);
+    const sigApiKey = await oatcrypto.sign(domain, { apiKey, domain });
+
+    const newToken = await initConn(`${sigApiKey.toString("base64")}|${token.split("|")[1]}`);
+
+    await _setToken(domain, newToken);
+};
+
+/**
+ * generates new token
+ *
+ * @param {string} token - request token
+ * @param {Object} newFields - session data to set
+ * @returns {Promise<string>} response token
+ */
+const rollTokenServer = async (token, newFields) => {
+    const { data } = _parseRequestToken(token);
+    const { clientId } = data;
+
     const rng = _genRNG();
-    const nextApiKey = crypto.createHmac("sha3-512", serverKey).update(rng).digest();
+    const currApiKey = await _getApiKey(clientId);
+    const nextApiKey = crypto.createHmac("sha3-256", currApiKey).update(rng).digest();
+    _setApiKey(clientId, nextApiKey);
 
-    cb(keyId, nextApiKey);
+    const tokenHeader = (await oatcrypto.encrypt(clientId, nextApiKey)).toString("base64");
 
-    const encNextKeyB64 = gpg.encrypt(keyId, nextApiKey).toString("base64");
+    const sessionHmac = _hmacSessionData(clientId, nextApiKey, newFields);
 
-    const fields = _insertKeyID(keyId, newfields);
-    const data = _signSessionData(nextApiKey, fields);
+    const tokenFooter = Buffer.concat([
+        sessionHmac, // 32 bytes
+        Buffer.from(clientId, "hex"), // 20 bytes
+        Buffer.from(JSON.stringify(newFields)),
+    ]).toString("base64");
 
-    return `${encNextKeyB64}-${data}`;
+    return `${tokenHeader}|${tokenFooter}`;
+};
+
+/**
+ * send public keys and store response token
+ *
+ * @param {function} initConn - function that returns response token from server
+ *     @param {Promise<string>} initial request token
+ *     @returns {Promise<string>} response token from server
+ */
+const initTokenClient = async (domain, initConn) => {
+    await oatcrypto.initClientKeys(domain, async (ourBoxPubKey, ourSignPubKey) => {
+        const token = (
+            await initConn(Buffer.concat([ourBoxPubKey, ourSignPubKey]).toString("base64"))
+        ).toString("base64");
+
+        const { key } = _parseResponseToken(token);
+
+        await _setToken(domain, token);
+
+        return key.serverBoxPubKey;
+    });
+};
+
+/**
+ * initialise token for client and exchange keys
+ *
+ * @param {string} initialisationToken - initial request token from client
+ * @param {Object} newFields - json data to put in
+ * @returns {Promise<string>} response token
+ */
+const initTokenServer = async (initialisationToken, newFields) => {
+    // Passing initialisation token
+    initialisationToken = Buffer.from(initialisationToken, "base64");
+    const clientBoxPubKey = initialisationToken.slice(0, 32);
+    const clientSignPubKey = initialisationToken.slice(32);
+
+    // Generate shared key
+    const { clientId, ourBoxPubKey } = await oatcrypto.initServerKeys(
+        clientBoxPubKey,
+        clientSignPubKey
+    );
+
+    // Generate api key
+    const rng = _genRNG();
+    const nextApiKey = crypto.createHmac("sha3-256", oatcrypto.OAT_PASS).update(rng).digest();
+    _setApiKey(clientId, nextApiKey);
+
+    // Generate token
+    const encNextApiKey = await oatcrypto.encrypt(clientId, nextApiKey);
+    const sessionHmac = _hmacSessionData(clientId, nextApiKey, newFields);
+
+    const tokenHeader = Buffer.concat([
+        ourBoxPubKey, // 32 bytes
+        encNextApiKey, // 32 bytes
+    ]).toString("base64");
+
+    const tokenFooter = Buffer.concat([
+        sessionHmac, // 32 bytes
+        Buffer.from(clientId, "hex"), // 20 bytes
+        Buffer.from(JSON.stringify(newFields)),
+    ]).toString("base64");
+
+    return `${tokenHeader}|${tokenFooter}`;
 };
 
 module.exports = {
-    initToken: initToken,
-    authToken: authToken,
-    rollToken: rollToken,
-    getSessionData: getSessionData,
+    client: {
+        initToken: initTokenClient,
+        rollToken: rollTokenClient,
+        getSessionData: getSessionData,
+    },
+    server: {
+        initToken: initTokenServer,
+        authToken: authToken,
+        rollToken: rollTokenServer,
+        getSessionData: getSessionData,
+        setSessionData: setSessionData,
+    },
 };

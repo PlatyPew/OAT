@@ -1,8 +1,8 @@
 const { InventoryInfoModel } = require("../models/MarketModel");
 
 /**
- * Return inventory quantities from MongoDB 
- * 
+ * Return inventory quantities from MongoDB
+ *
  * @returns {object} - Inventory quantities
  */
 const getInventory = async () => {
@@ -13,7 +13,7 @@ const getInventory = async () => {
 
 /**
  * Set quantities of items in shopping cart session data
- * 
+ *
  * @param {object} cart - Object containing quantities of items
  * @returns {object|null} - cart object containing new quantities of items or null
  */
@@ -35,7 +35,7 @@ const setCart = async (cart) => {
 
 /**
  * Deduct quantities of items in shopping cart session data from inventory
- * 
+ *
  * @param {object} cart - Object containing quantities of items
  */
 const buyItems = async (cart) => {
@@ -47,8 +47,20 @@ const buyItems = async (cart) => {
     inventory.save();
 };
 
+const restockInventory = async () => {
+    const inventory = (await InventoryInfoModel.find())[0];
+
+    let items = Object.keys(inventory.toObject()).slice(1);
+
+    items.forEach((item) => {
+        inventory[item] = 100;
+    });
+    inventory.save();
+};
+
 module.exports = {
     setCart: setCart,
     getInventory: getInventory,
     buyItems: buyItems,
+    restockInventory: restockInventory,
 };

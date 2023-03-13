@@ -126,5 +126,18 @@ router.post("/store/buy", oat.roll, async (_, res) => {
     }
 });
 
+router.post("/store/restock", oat.roll, async(_, res) => {
+    res.setHeader("Content-Type", "application/json");
+    try {
+        await market.restockInventory();
+        const inventory = await market.getInventory();
+
+        return res.json({ response: inventory });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).send();
+    }
+})
+
 // Export the router
 module.exports = router;

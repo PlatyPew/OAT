@@ -64,6 +64,7 @@ router.get("/cart/get", oat.roll, async (_, res) => {
  * @res.json {string} - Return response message
  */
 router.post("/cart/set", oat.roll, async (req, res) => {
+    res.setHeader("Content-Type", "application/json");
     if (!req.accepts("json")) return res.status(400).json();
 
     let cart = req.body;
@@ -79,7 +80,7 @@ router.post("/cart/set", oat.roll, async (req, res) => {
         return res.json({ response: cart });
     } catch (err) {
         console.error(err.toString());
-        return res.status(500).json({ response: "Invalid token" });
+        return res.status(500).send();
     }
 });
 
@@ -97,37 +98,21 @@ router.post("/cart/set", oat.roll, async (req, res) => {
  * @res.header {string} OAT - Next Base64 encoded API token
  * @res.json {object|string} - Return empty shopping cart as JSON object or response message
  */
-router.post("/store/buy", async (req, res) => {
-    const token = req.get("OAT");
-    if (token === undefined) {
-        res.status(401).json({ response: "OAT Token Missing" });
-        return;
-    }
-
+router.post("/store/buy", oat.roll, async (_, res) => {
+    res.setHeader("Content-Type", "application/json");
     try {
-        let newFields = oat.getSessionData(token);
+        let newFields = await oat.getsession(res);
         const cart = newFields.cart;
-        if (await validCurrentToken(token)) {
-            await market.buyItems(newFields.cart);
-            newFields.cart = {};
-        }
 
-        const { err, newToken, valid } = await updateByToken(token, newFields);
-        if (err) {
-            res.status(403).json({ response: err });
-            return;
-        }
+        await market.buyItems(newFields.cart);
+        newFields.cart = {};
 
-        res.setHeader("OAT", newToken);
-        if (!valid) {
-            res.status(204).json();
-            return;
-        }
+        await oat.setsession(res, newFields);
 
-        res.status(200).json({ response: cart });
+        return res.json({ response: cart });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ response: "Invalid token" });
+        return res.status(500).send();
     }
 });
 

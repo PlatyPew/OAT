@@ -24,8 +24,13 @@ const market = require("../utils/market.js");
  */
 router.get("/store/get", oat.roll, async (req, res) => {
     res.setHeader("Content-Type", "application/json");
-    const inventory = await market.getInventory();
-    return res.json({ response: inventory });
+    try {
+        const inventory = await market.getInventory();
+        return res.json({ response: inventory });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).send();
+    }
 });
 
 /**
@@ -44,8 +49,13 @@ router.get("/store/get", oat.roll, async (req, res) => {
  */
 router.get("/cart/get", oat.roll, async (_, res) => {
     res.setHeader("Content-Type", "application/json");
-    const cart = (await oat.getsession(res)).cart;
-    return res.json({ response: cart });
+    try {
+        const cart = (await oat.getsession(res)).cart;
+        return res.json({ response: cart });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).send();
+    }
 });
 
 /**

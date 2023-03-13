@@ -87,7 +87,7 @@ const roll = async (req, res, next) => {
  * gets the session data of the response token
  *
  * @async
- * @param {Object} res - response from expressjs
+ * @param {Response} res - response from expressjs
  * @returns {Promise<Object>} returns json of session data
  */
 const getsession = async (res) => {
@@ -99,7 +99,7 @@ const getsession = async (res) => {
  * sets the session data of the response token
  *
  * @async
- * @param {Object} res - response from expressjs
+ * @param {Response} res - response from expressjs
  * @param {Object} newFields - json of session data to set
  */
 const setsession = async (res, newFields) => {

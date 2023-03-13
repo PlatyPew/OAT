@@ -1,6 +1,10 @@
 const oat = require("@platypew/oatoken").client;
 const axios = require("axios");
 const fs = require("fs");
+const readline = require("readline").createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
 
 const API_URL = "https://www.charming-brahmagupta.cloud";
 
@@ -95,16 +99,49 @@ const restockStoreInventory = async () => {
     return data.response;
 };
 
+const prompt = (question) => {
+    return new Promise((resolve, reject) => {
+        readline.question(question, (answer) => {
+            resolve(answer);
+        });
+    });
+};
+
 (async () => {
     await require("libsodium-wrappers").ready;
 
     await keyExchange();
 
-    /* console.log(await setCartInventory({ apple: 20 })); */
-    /* console.log(await buyItems()); */
-    /* console.log(await getCartInventory()); */
-    /* console.log(await buyItems()); */
-    /* console.log(await getStoreInventory()); */
-    /* console.log(await restockStoreInventory()); */
-    /* console.log(await getStoreInventory()); */
+    while (true) {
+        let option = await prompt(
+            `Welcome to the OAT store! What would you like to do?
+1. List items in the store
+2. List items in your cart
+3. Add items to your cart
+4. Buy items in your cart
+5. Restock store items
+0. Exit
+
+> `
+        );
+
+        option = parseInt(option);
+        if (isNaN(option) || option < 1 || option > 5) {
+            readline.close();
+            break;
+        }
+
+        const funcs = [
+            getStoreInventory,
+            getCartInventory,
+            setCartInventory,
+            buyItems,
+            restockStoreInventory,
+        ];
+
+        let items = {};
+        if (option === 3) items = JSON.parse(await prompt("Enter JSON string here:\n> "));
+
+        console.log(await funcs[option - 1](items));
+    }
 })();

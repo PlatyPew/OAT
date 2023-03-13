@@ -25,7 +25,7 @@ const market = require("../utils/market.js");
 router.get("/store/get", oat.roll, async (_, res) => {
     res.setHeader("Content-Type", "application/json");
     const inventory = await market.getInventory();
-    res.json({ response: inventory });
+    return res.json({ response: inventory });
 });
 
 /**
@@ -44,8 +44,8 @@ router.get("/store/get", oat.roll, async (_, res) => {
  */
 router.get("/cart/get", oat.roll, async (_, res) => {
     res.setHeader("Content-Type", "application/json");
-    const cart = 
-    res.json({ response: cart });
+    const cart = (await oat.getsession(res)).cart;
+    return res.json({ response: cart });
 });
 
 /**

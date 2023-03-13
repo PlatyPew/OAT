@@ -68,16 +68,21 @@ const postRequest = async (apiPath, fields) => {
     }
 };
 
-const getStoreInventory =async() => {
+const getStoreInventory = async () => {
     const data = await getRequest("/api/market/store/get");
     return data.response;
-}
+};
+
+const getCartInventory = async () => {
+    const data = await getRequest("/api/market/cart/get");
+    return data.response;
+};
 
 (async () => {
     await require("libsodium-wrappers").ready;
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
     await keyExchange();
-    console.log(await getStoreInventory());
+    console.log(await getCartInventory());
     /* await postRequest(); */
 })();

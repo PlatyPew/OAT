@@ -161,6 +161,31 @@ const getSessionData = (token) => {
 };
 
 /**
+ * update session data of token
+ *
+ * @async
+ * @param {string} token - response token
+ * @param {Object} newFields - new fields to change
+ * @returns {Promise<string>} updated response token
+ */
+const setSessionData = async (token, newFields) => {
+    const { data } = _parseResponseToken(token);
+    const { clientId } = data;
+
+    const sessionHmac = _hmacSessionData(clientId, await _getApiKey(clientId), newFields);
+
+    const tokenHeader = token.split("|")[0];
+
+    const tokenFooter = Buffer.concat([
+        sessionHmac, // 32 bytes
+        Buffer.from(clientId, "hex"), // 20 bytes
+        Buffer.from(JSON.stringify(newFields)),
+    ]).toString("base64");
+
+    return `${tokenHeader}|${tokenFooter}`;
+};
+
+/**
  * check if token is authenticated
  *
  * @async
@@ -312,5 +337,6 @@ module.exports = {
         authToken: authToken,
         rollToken: rollTokenServer,
         getSessionData: getSessionData,
+        setSessionData: setSessionData,
     },
 };

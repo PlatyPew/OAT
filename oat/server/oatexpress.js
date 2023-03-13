@@ -83,8 +83,35 @@ const roll = async (req, res, next) => {
     next();
 };
 
+/**
+ * gets the session data of the response token
+ *
+ * @async
+ * @param {Object} res - response from expressjs
+ * @returns {Promise<Object>} returns json of session data
+ */
+const getsession = async (res) => {
+    const responseToken = res.getHeader("OAT");
+    return oat.getSessionData(responseToken);
+};
+
+/**
+ * sets the session data of the response token
+ *
+ * @async
+ * @param {Object} res - response from expressjs
+ * @param {Object} newFields - json of session data to set
+ */
+const setsession = async (res, newFields) => {
+    let responseToken = res.getHeader("OAT");
+    responseToken = await oat.setSessionData(responseToken, newFields);
+    res.setHeader("OAT", responseToken);
+};
+
 module.exports = {
     initpath: initpath,
     init: init,
     roll: roll,
+    getsession: getsession,
+    setsession: setsession,
 };

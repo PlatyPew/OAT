@@ -825,7 +825,6 @@ video {
 body {
   background-image: url('../img/background.jpg');
   background-repeat: no-repeat;
-  background-size: 2500px;
 }
 
 .hover\:bg-brightRedLight:hover {

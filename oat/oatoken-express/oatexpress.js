@@ -2,7 +2,7 @@ const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
 
-const oat = require("oatoken").server;
+const oat = require("@platypew/oatoken").server;
 
 const DOMAIN = process.env.DOMAIN;
 if (!DOMAIN) throw new Error("DOMAIN variable not set");

@@ -1,5 +1,5 @@
 {
-  "name": "oatoken",
+  "name": "@platypew/oatoken",
   "version": "1.0.0",
   "description": "A rolling api key powered by crypto",
   "main": "oat.js",

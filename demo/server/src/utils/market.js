@@ -44,7 +44,7 @@ const buyItems = async (cart) => {
     Object.keys(cart).forEach((item) => {
         inventory[item] -= cart[item];
     });
-    inventory.save();
+    await inventory.save();
 };
 
 const restockInventory = async () => {
@@ -55,7 +55,7 @@ const restockInventory = async () => {
     items.forEach((item) => {
         inventory[item] = 100;
     });
-    inventory.save();
+    await inventory.save();
 };
 
 module.exports = {

@@ -49,6 +49,8 @@ const init = (initFields) => async (req, res, next) => {
 
     // Initialise key exchange process
     const requestToken = req.get("OAT");
+    if (!requestToken) res.status(400).json({ response: "OAT Token Not Found" });
+
     try {
         await fs.promises.unlink(`${TMP_DIR}/${basename}`);
 
@@ -69,6 +71,7 @@ const init = (initFields) => async (req, res, next) => {
  */
 const roll = async (req, res, next) => {
     const requestToken = req.get("OAT");
+    if (!requestToken) res.status(400).json({ response: "OAT Token Not Found" });
 
     try {
         if (!(await oat.authToken(DOMAIN, requestToken)))

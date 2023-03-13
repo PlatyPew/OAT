@@ -47,32 +47,8 @@ const buyItems = async (cart) => {
     inventory.save();
 };
 
-/**
- * Set quantities of items in newInventory for MongoDB inventory data
- * 
- * @param {object} newInventory - Object containing new quantities of items
- * @returns {boolean} - True: Quantities updated successfully, False: Error occurred when updating
- */
-const setInventory = async (newInventory) => {
-    const inventory = (await InventoryInfoModel.find())[0];
-
-    try {
-        Object.keys(inventory.toObject())
-            .slice(1)
-            .forEach((item) => {
-                if (!newInventory.hasOwnProperty(item)) throw "Item not there";
-                inventory[item] = newInventory[item];
-            });
-        inventory.save();
-        return true;
-    } catch {
-        return false;
-    }
-};
-
 module.exports = {
     setCart: setCart,
     getInventory: getInventory,
     buyItems: buyItems,
-    setInventory: setInventory,
 };

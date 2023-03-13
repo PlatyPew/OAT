@@ -55,14 +55,17 @@ const getRequest = async (apiPath) => {
 const postRequest = async (apiPath, fields) => {
     const domain = new URL(API_URL).hostname;
     try {
+        let data;
         await oat.rollToken(domain, async (requestToken) => {
+            console.log(requestToken);
             const response = await axios.post(`${API_URL}${apiPath}`, fields, {
                 headers: { OAT: requestToken },
             });
 
-            const responseToken = response.headers.oat;
-            return responseToken;
+            data = response.data;
+            return response.headers.oat;
         });
+        return data;
     } catch (err) {
         console.error(err);
     }
@@ -78,11 +81,18 @@ const getCartInventory = async () => {
     return data.response;
 };
 
+const setCartInventory = async (fields) => {
+    const data = await postRequest("/api/market/cart/set", fields);
+    return data.response;
+};
+
 (async () => {
     await require("libsodium-wrappers").ready;
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
     await keyExchange();
-    console.log(await getCartInventory());
+    /* console.log(await getStoreInventory()); */
+    /* console.log(await getCartInventory()); */
+    /* console.log(await setCartInventory({})); */
     /* await postRequest(); */
 })();

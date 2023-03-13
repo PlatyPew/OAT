@@ -22,7 +22,7 @@ const market = require("../utils/market.js");
  * @res.header {string} OAT - Next Base64 encoded API token
  * @res.json {object|string} - Return inventory items as JSON object or response message
  */
-router.get("/store/get", oat.roll, async (_, res) => {
+router.get("/store/get", oat.roll, async (req, res) => {
     res.setHeader("Content-Type", "application/json");
     const inventory = await market.getInventory();
     return res.json({ response: inventory });
@@ -63,46 +63,23 @@ router.get("/cart/get", oat.roll, async (_, res) => {
  * @res.header {string} OAT - Next Base64 encoded API token
  * @res.json {string} - Return response message
  */
-router.post("/cart/set", async (req, res) => {
-    if (!req.accepts("json")) {
-        res.status(400).json();
-        return;
-    }
+router.post("/cart/set", oat.roll, async (req, res) => {
+    if (!req.accepts("json")) return res.status(400).json();
 
     let cart = req.body;
 
-    const token = req.get("OAT");
-    if (token === undefined) {
-        res.status(401).json({ response: "OAT Token Missing" });
-        return;
-    }
-
     try {
         cart = await market.setCart(cart);
-        const newFields = oat.getSessionData(token);
+        const newFields = await oat.getsession(res);
         newFields.cart = cart;
 
-        if (newFields.cart === null) {
-            res.status(400).json({ response: "Cart Not Valid" });
-            return;
-        }
+        if (newFields.cart === null) return res.status(400).json({ response: "Cart Not Valid" });
+        await oat.setsession(res, newFields);
 
-        const { err, newToken, valid } = await updateByToken(token, newFields);
-        if (err) {
-            res.status(403).json({ response: err });
-            return;
-        }
-
-        res.setHeader("OAT", newToken);
-        if (!valid) {
-            res.status(204).json();
-            return;
-        }
-
-        res.status(200).json({ response: cart });
+        return res.json({ response: cart });
     } catch (err) {
         console.error(err.toString());
-        res.status(500).json({ response: "Invalid token" });
+        return res.status(500).json({ response: "Invalid token" });
     }
 });
 
@@ -148,71 +125,6 @@ router.post("/store/buy", async (req, res) => {
         }
 
         res.status(200).json({ response: cart });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ response: "Invalid token" });
-    }
-});
-
-/**
- * <url>/src/routes/market/store/restock
- * Set new quantities for inventory 
- * Roles allowed: admin
- *
- * update.updateByToken():
- * Roll API Token
- * 
- * market.setInventory():
- * Set new quantities for inventory 
- *
- * @req.header {string} OAT - Current Base64 encoded API token
- * @req.body {json} - JSON object containing inventory items with new quantities
- * @res.header {string} OAT - Next Base64 encoded API token
- * @res.json {object|string} - Return new inventory as JSON object or response message
- */
-router.post("/store/restock", async (req, res) => {
-    if (!req.accepts("json")) {
-        res.status(400).json();
-        return;
-    }
-
-    let newInventory = req.body;
-    Object.keys(newInventory).forEach((item) => {
-        newInventory[item] = parseInt(newInventory[item]);
-    });
-
-    const token = req.get("OAT");
-    if (token === undefined) {
-        res.status(401).json({ response: "OAT Token Missing" });
-        return;
-    }
-
-    try {
-        const newFields = oat.getSessionData(token);
-
-        const { err, newToken, valid } = await updateByToken(token, newFields);
-        if (err) {
-            res.status(403).json({ response: err });
-            return;
-        }
-
-        res.setHeader("OAT", newToken);
-        if (!newFields.admin) {
-            res.status(403).json();
-            return;
-        }
-
-        if (!valid) {
-            res.status(204).json();
-            return;
-        }
-
-        if (!(await market.setInventory(newInventory))) {
-            res.status(400).json({ response: "Incorrect Format" });
-            return;
-        }
-
-        res.status(200).json({ response: newInventory });
     } catch (err) {
         console.error(err);
         res.status(500).json({ response: "Invalid token" });

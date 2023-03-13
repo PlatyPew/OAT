@@ -16,7 +16,7 @@ const oat = require("@platypew/oatoken-express");
 const PORT = 3000;
 
 // URI for Mongodb
-const MONGO = "mongodb://localhost/oat";
+const MONGO = "mongodb://database/oat";
 
 // Initialise database
 (async () => {

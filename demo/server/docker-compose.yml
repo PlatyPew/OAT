@@ -6,6 +6,7 @@ services:
     container_name: restapi
     environment:
       - OAT_PASS=${OAT_PASS}
+      - DOMAIN=${DOMAIN}
     restart: always
     networks:
       - db

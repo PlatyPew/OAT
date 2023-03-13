@@ -1,4 +1,4 @@
-FROM node:19-buster
+FROM node:19-alpine
 
 WORKDIR /opt/market
 

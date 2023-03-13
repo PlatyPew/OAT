@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-    background-image: url('../img/v748-toon-111.jpg');
+    background-image: url('../img/background.jpg');
     background-repeat: no-repeat;
     background-size: 2500px;
 }

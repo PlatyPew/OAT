@@ -545,10 +545,6 @@ video {
   position: relative;
 }
 
-.bottom-0 {
-  bottom: 0px;
-}
-
 .mx-auto {
   margin-left: auto;
   margin-right: auto;
@@ -592,10 +588,6 @@ video {
 
 .hidden {
   display: none;
-}
-
-.h-10 {
-  height: 2.5rem;
 }
 
 .h-16 {
@@ -831,7 +823,7 @@ video {
 }
 
 body {
-  background-image: url('../img/v748-toon-111.jpg');
+  background-image: url('../img/background.jpg');
   background-repeat: no-repeat;
   background-size: 2500px;
 }

@@ -84,7 +84,7 @@ app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true, limit: "8mb" }));
 app.use(bodyParser.json({ limit: "8mb" }));
 
-app.use(oat.init);
+app.use(oat.init({ cart: {} }));
 
 app.get("/", (_, res) => {
     res.sendFile(path.join(__dirname, "/src/public/index.html"));
@@ -92,6 +92,9 @@ app.get("/", (_, res) => {
 
 const auth = require("./src/routes/auth");
 app.use("/api/auth", auth);
+
+const market = require("./src/routes/market");
+app.use("/api/market", market);
 
 // Start Server
 console.log(`Waiting to connect to ${MONGO}`);

@@ -4,10 +4,7 @@ const express = require("express");
 // Setup the express server router
 const router = express.Router();
 
-// GPG + MongoDB Update Module
-const { updateByToken, validCurrentToken } = require("../utils/update");
-
-const oat = require("../utils/oat.js");
+const oat = require("@platypew/oatoken-express");
 
 const market = require("../utils/market.js");
 
@@ -25,35 +22,10 @@ const market = require("../utils/market.js");
  * @res.header {string} OAT - Next Base64 encoded API token
  * @res.json {object|string} - Return inventory items as JSON object or response message
  */
-router.get("/store/get", async (req, res) => {
+router.get("/store/get", oat.roll, async (_, res) => {
     res.setHeader("Content-Type", "application/json");
-
-    // Check if token exists
-    const token = req.get("OAT");
-    if (token === undefined) {
-        res.status(401).json({ response: "OAT Token Missing" });
-        return;
-    }
-
-    try {
-        const { err, newToken, valid } = await updateByToken(token, oat.getSessionData(token));
-        if (err) {
-            res.status(403).json({ response: err });
-            return;
-        }
-
-        res.setHeader("OAT", newToken);
-        if (!valid) {
-            res.status(204).json();
-            return;
-        }
-
-        const inventory = await market.getInventory();
-        res.status(200).json({ response: inventory });
-    } catch (err) {
-        console.error(err.toString());
-        res.status(500).json({ response: "Invalid token" });
-    }
+    const inventory = await market.getInventory();
+    res.json({ response: inventory });
 });
 
 /**
@@ -70,36 +42,10 @@ router.get("/store/get", async (req, res) => {
  * @res.header {string} OAT - Next Base64 encoded API token
  * @res.json {object|string} - Return shopping cart items as JSON object or response message
  */
-router.get("/cart/get", async (req, res) => {
+router.get("/cart/get", oat.roll, async (_, res) => {
     res.setHeader("Content-Type", "application/json");
-
-    // Check if token exists
-    const token = req.get("OAT");
-    if (token === undefined) {
-        res.status(401).json({ response: "OAT Token Missing" });
-        return;
-    }
-
-    try {
-        const { err, newToken, valid } = await updateByToken(token, oat.getSessionData(token));
-        if (err) {
-            res.status(403).json({ response: err });
-            return;
-        }
-
-        res.setHeader("OAT", newToken);
-        if (!valid) {
-            res.status(204).json();
-            return;
-        }
-
-        const cart = market.getCart(token);
-
-        res.status(200).json({ response: cart });
-    } catch (err) {
-        console.error(err.toString());
-        res.status(500).json({ response: "Invalid token" });
-    }
+    const cart = 
+    res.json({ response: cart });
 });
 
 /**

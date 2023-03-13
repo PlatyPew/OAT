@@ -14,7 +14,7 @@ router.post(
         const password = req.body.password;
 
         if (!(await auth.verifyCredentials(email, password)))
-            return res.status(403).json({ response: "Wrong Password" });
+            return res.status(403).json({ response: "Wrong Username Or Password" });
 
         next();
     },

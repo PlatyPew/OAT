@@ -1,7 +1,5 @@
 const { InventoryInfoModel } = require("../models/MarketModel");
 
-const oat = require("./oat");
-
 /**
  * Return inventory quantities from MongoDB 
  * 
@@ -11,16 +9,6 @@ const getInventory = async () => {
     const inventory = (await InventoryInfoModel.find())[0].toObject();
     delete inventory._id;
     return inventory;
-};
-
-/**
- * Return shopping cart quantities from Token session data
- * 
- * @param {string} token - Base64 encoded API token
- * @returns {object} - Shopping cart data
- */
-const getCart = (token) => {
-    return oat.getSessionData(token).cart;
 };
 
 /**
@@ -83,7 +71,6 @@ const setInventory = async (newInventory) => {
 };
 
 module.exports = {
-    getCart: getCart,
     setCart: setCart,
     getInventory: getInventory,
     buyItems: buyItems,

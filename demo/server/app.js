@@ -26,48 +26,31 @@ const MONGO = "mongodb://localhost/oat";
     if ((await AccountInfoModel.find()).length === 0) {
         AccountInfoModel.insertMany([
             {
-                email: "admin@oat.com",
-                password:
-                    "d9f7cd77d0695cff5e23862024f3cc07e24606dd168ba7593f665a89ced9e972d20c78680c6cb65a4264e496f3e143df3ec9a7efa4f847d7acfee0f39b6e6b2b",
-                admin: true,
-            },
-            {
                 email: "alford@oat.com",
                 password:
                     "a95a503d26a8d0282f213b7b692057a10f74ac11b9e686755498765900acbf54a88affd2ad28538752084814332e965a88b1d1c8e070f4423b9f150cf6174448",
-                admin: false,
             },
             {
                 email: "daryl@oat.com",
                 password:
                     "a95a503d26a8d0282f213b7b692057a10f74ac11b9e686755498765900acbf54a88affd2ad28538752084814332e965a88b1d1c8e070f4423b9f150cf6174448",
-                admin: false,
             },
             {
                 email: "joshua@oat.com",
                 password:
                     "a95a503d26a8d0282f213b7b692057a10f74ac11b9e686755498765900acbf54a88affd2ad28538752084814332e965a88b1d1c8e070f4423b9f150cf6174448",
-                admin: false,
             },
             {
                 email: "kunfeng@oat.com",
                 password:
                     "a95a503d26a8d0282f213b7b692057a10f74ac11b9e686755498765900acbf54a88affd2ad28538752084814332e965a88b1d1c8e070f4423b9f150cf6174448",
-                admin: false,
             },
         ]);
     }
 
     if ((await InventoryInfoModel.find()).length === 0) {
         InventoryInfoModel.insertMany([
-            {
-                banana: 25,
-                grape: 23,
-                apple: 17,
-                watermelon: 4,
-                orange: 41,
-                lemon: 29,
-            },
+            { banana: 100, grape: 100, apple: 100, watermelon: 100, orange: 100, lemon: 100 },
         ]);
     }
 })();

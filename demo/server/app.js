@@ -10,12 +10,13 @@ const path = require("path");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const oat = require("@platypew/oatoken-express");
 
 // Declare port
 const PORT = 3000;
 
 // URI for Mongodb
-const MONGO = "mongodb://database/oat";
+const MONGO = "mongodb://localhost/oat";
 
 // Initialise database
 (async () => {
@@ -71,8 +72,6 @@ const MONGO = "mongodb://database/oat";
     }
 })();
 
-if (!process.env.OAT_PASS) throw Error("OAT_PASS is not set");
-
 // HTTPS settings
 const SSL_OPTIONS = {
     key: fs.readFileSync("key.pem"),
@@ -85,21 +84,19 @@ app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true, limit: "8mb" }));
 app.use(bodyParser.json({ limit: "8mb" }));
 
+app.use(oat.init);
+
 app.get("/", (_, res) => {
     res.sendFile(path.join(__dirname, "/src/public/index.html"));
 });
 
-// User Credential Authentication + Generate IV
-const auth = require("./src/routes/init");
-app.use("/api/init", auth);
-
-const market = require("./src/routes/market");
-app.use("/api/market", market);
+const auth = require("./src/routes/auth");
+app.use("/api/auth", auth);
 
 // Start Server
 console.log(`Waiting to connect to ${MONGO}`);
 mongoose.set("strictQuery", false);
-mongoose.connect(MONGO, { useNewUrlParser: true, useUnifiedTopology: true }, () => {
+mongoose.connect(MONGO).then(() => {
     https
         .createServer(SSL_OPTIONS, app)
         .listen(PORT, () => console.log(`App listening on port ${PORT}`));

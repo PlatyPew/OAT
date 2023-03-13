@@ -19,13 +19,6 @@ const verifyCredentials = async (email, password) => {
     return true;
 };
 
-const alreadyInit = async (email) => {
-    const acc = await AccountInfoModel.findOne({ email: email });
-
-    return acc["gpgKeyId"] !== undefined;
-};
-
 module.exports = {
     verifyCredentials: verifyCredentials,
-    alreadyInit: alreadyInit,
 };

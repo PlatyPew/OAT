@@ -14,7 +14,6 @@
   },
   "homepage": "https://github.com/PlatyPew/OAT#readme",
   "dependencies": {
-    "libsodium-wrappers": "^0.7.11",
-    "mongoose": "^7.0.1"
+    "libsodium-wrappers": "^0.7.11"
   }
 }

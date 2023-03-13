@@ -49,16 +49,16 @@ const init = (initFields) => async (req, res, next) => {
 
     // Initialise key exchange process
     const requestToken = req.get("OAT");
-    if (!requestToken) res.status(400).json({ response: "OAT Token Not Found" });
+    if (!requestToken) return res.status(400).json({ response: "OAT Token Not Found" });
 
     try {
         await fs.promises.unlink(`${TMP_DIR}/${basename}`);
 
         const responseToken = await oat.initToken(requestToken, initFields);
         res.setHeader("OAT", responseToken);
-        res.json({ response: true });
+        return res.json({ response: true });
     } catch {
-        res.status(400).json({ response: "Invalid Token" });
+        return res.status(400).json({ response: "Invalid Token" });
     }
 
     return next();
@@ -71,7 +71,7 @@ const init = (initFields) => async (req, res, next) => {
  */
 const roll = async (req, res, next) => {
     const requestToken = req.get("OAT");
-    if (!requestToken) res.status(400).json({ response: "OAT Token Not Found" });
+    if (!requestToken) return res.status(400).json({ response: "OAT Token Not Found" });
 
     try {
         if (!(await oat.authToken(DOMAIN, requestToken)))

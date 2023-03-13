@@ -1,6 +1,6 @@
 {
   "name": "@platypew/oatoken-express",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Express middleware for oatoken",
   "main": "oatexpress.js",
   "scripts": {

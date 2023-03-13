@@ -69,15 +69,17 @@ app.use(bodyParser.json({ limit: "8mb" }));
 
 app.use(oat.init({ cart: {} }));
 
-app.get("/", (_, res) => {
-    res.sendFile(path.join(__dirname, "/src/public/index.html"));
-});
+app.use(express.static(path.join(__dirname, "src/public")));
 
 const auth = require("./src/routes/auth");
 app.use("/api/auth", auth);
 
 const market = require("./src/routes/market");
 app.use("/api/market", market);
+
+app.get("*", (_, res) => {
+    res.redirect("/");
+});
 
 // Start Server
 console.log(`Waiting to connect to ${MONGO}`);

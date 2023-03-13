@@ -2,7 +2,7 @@ const oat = require("@platypew/oatoken").client;
 const axios = require("axios");
 const fs = require("fs");
 
-const API_URL = "https://localhost:3000";
+const API_URL = "https://www.charming-brahmagupta.cloud";
 
 const keyExchange = async () => {
     const domain = new URL(API_URL).hostname;
@@ -34,7 +34,7 @@ const keyExchange = async () => {
     }
 };
 
-const getRequest = async (apiPath) => {
+const _getRequest = async (apiPath) => {
     const domain = new URL(API_URL).hostname;
     try {
         let data;
@@ -52,7 +52,7 @@ const getRequest = async (apiPath) => {
     }
 };
 
-const postRequest = async (apiPath, fields) => {
+const _postRequest = async (apiPath, fields) => {
     const domain = new URL(API_URL).hostname;
     try {
         let data;
@@ -71,35 +71,40 @@ const postRequest = async (apiPath, fields) => {
 };
 
 const getStoreInventory = async () => {
-    const data = await getRequest("/api/market/store/get");
+    const data = await _getRequest("/api/market/store/get");
     return data.response;
 };
 
 const getCartInventory = async () => {
-    const data = await getRequest("/api/market/cart/get");
+    const data = await _getRequest("/api/market/cart/get");
     return data.response;
 };
 
 const setCartInventory = async (fields) => {
-    const data = await postRequest("/api/market/cart/set", fields);
+    const data = await _postRequest("/api/market/cart/set", fields);
     return data.response;
 };
 
 const buyItems = async () => {
-    const data = await postRequest("/api/market/store/buy", {});
+    const data = await _postRequest("/api/market/store/buy", {});
+    return data.response;
+};
+
+const restockStoreInventory = async () => {
+    const data = await _postRequest("/api/market/store/restock", {});
     return data.response;
 };
 
 (async () => {
     await require("libsodium-wrappers").ready;
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
     await keyExchange();
+
+    /* console.log(await setCartInventory({ apple: 20 })); */
+    /* console.log(await buyItems()); */
+    /* console.log(await getCartInventory()); */
+    /* console.log(await buyItems()); */
     /* console.log(await getStoreInventory()); */
-    console.log(await setCartInventory({ apple: 20 }));
-    console.log(await buyItems());
-    console.log(await getCartInventory());
-    console.log(await buyItems());
-    console.log(await getStoreInventory());
-    /* await postRequest(); */
+    /* console.log(await restockStoreInventory()); */
+    /* console.log(await getStoreInventory()); */
 })();

@@ -8,14 +8,21 @@ function insertHeader(headers, name, value) {
 
 function _readToken(headers) {
     for (var i = 0; i < headers.length; i++) {
-        if (headers[i].name == "OAT") {
+        if (headers[i].name.toLowerCase() == "oat") {
             return { token:headers[i].value, init:false };
         }
-        else if (headers[i].name == "OATINIT") {
-            return { value:headers[i].value, init:true };
+        else if (headers[i].name.toLowerCase() == "oatinit") {
+            return { token:headers[i].value, init:true };
         }
       }
       return { token:undefined, init:undefined };
+}
+
+function _getNextToken(domain) {
+    var promise = new Promise(function(resolve, reject) {
+        resolve(oatclient.decryptNextToken(domain));
+    });
+    return promise.then()
 }
 
 (async () => {
@@ -27,8 +34,12 @@ function _readToken(headers) {
             // check if domain exist in localStorage
             let domain = (new URL(details.url)).hostname;
 
-            const newToken = decryptNextTokenClient(domain);
-    
+            const token = oatclient.getToken(domain);
+
+            if (token == undefined) return;
+
+            const newToken = oatclient.decryptNextToken(domain);
+
             insertHeader(details.requestHeaders,"OAT", newToken);
             return {requestHeaders: details.requestHeaders};
         },
@@ -42,19 +53,17 @@ function _readToken(headers) {
     chrome.webRequest.onHeadersReceived.addListener(
         function(details) {
             // check if domain exist in localStorage
-            const domain = (new URL(details.url)).hostname;''
+            const domain = (new URL(details.url)).hostname;
     
             const { token, init } = _readToken(details.responseHeaders);
-    
-            if (token == undefined) return;
 
+            if (token == undefined) return;
+            
             if (init) {
-            // if (true) {
                 const protocol = (new URL(details.url)).protocol;
                 const pathname = (new URL(details.url)).pathname;
 
-                const url = `${protocol}//${domain}${pathname}/get`;
-                console.log(url);
+                const url = `${protocol}//${domain}${token}`;
 
                 oatclient.initToken(domain, async(ourBoxSignPubKey) => {
                     var promise = new Promise(function(resolve, reject) {
@@ -68,7 +77,6 @@ function _readToken(headers) {
                             else {
                                 reject();
                             }
-                            console.log(xhr.getAllResponseHeaders());
                         }
                         xhr.send();
                     });
@@ -78,7 +86,6 @@ function _readToken(headers) {
             else {
                 oatclient.setToken(domain, token);
             }
-    
             return {responseHeaders: details.responseHeaders};
         },
         // filters

@@ -7,7 +7,7 @@ const oatcrypto = require("./oatcrypto");
  * @param {string} clientId - client id
  * @returns {Promise<string>} api token
  */
-const _getToken = async (clientId) => {
+const getToken = (clientId) => {
     return oatcrypto.getLocalStorage(clientId, "token");
 };
 
@@ -18,7 +18,7 @@ const _getToken = async (clientId) => {
  * @param {string} clientId - client id
  * @param {string} token - api token
  */
-const setToken = async (clientId, token) => {
+const setToken = (clientId, token) => {
     oatcrypto.setLocalStorage(clientId, "token", token);
 };
 
@@ -70,37 +70,17 @@ const getSessionData = (token) => {
 };
 
 /**
- * generates new token
- *
- * @async
- * @param {string} domain - server domain
- * @param {function} initConn - initiate connection with server
- *     @param {string} request token
- */
-// const rollTokenClient = async (domain, initConn) => {
-//     const token = await _getToken(domain);
-//     const { key } = _parseResponseToken(token);
-
-//     const apiKey = await oatcrypto.decrypt(domain, key.encApiKey);
-//     const sigApiKey = await oatcrypto.sign(domain, { apiKey, domain });
-
-//     const newToken = await initConn(`${sigApiKey.toString("base64")}|${token.split("|")[1]}`);
-
-//     await setToken(domain, newToken);
-// };
-
-/**
  * decrypt next token
  *
  * @async
  * @param {string} domain - server domain
  */
-const decryptNextTokenClient = async (domain) => {
-    const token = await _getToken(domain);
+const decryptNextToken = (domain) => {
+    const token = getToken(domain);
     const { key } = _parseResponseToken(token);
 
-    const apiKey = await oatcrypto.decrypt(domain, key.encApiKey);
-    const sigApiKey = await oatcrypto.sign(domain, { apiKey, domain });
+    const apiKey = oatcrypto.decrypt(domain, key.encApiKey);
+    const sigApiKey = oatcrypto.sign(domain, { apiKey, domain });
 
     return `${sigApiKey.toString("base64")}|${token.split("|")[1]}`;
 };
@@ -116,11 +96,9 @@ const initTokenClient = async (domain, initConn) => {
         const token = (await initConn(
             Buffer.concat([ourBoxPubKey, ourSignPubKey]).toString("base64")
         ));
-        console.log(token);
         const { key } = _parseResponseToken(token);
-        
-        console.log(domain);
-        await setToken(domain, token);
+
+        setToken(domain, token);
 
         return key.serverBoxPubKey;
     });
@@ -130,8 +108,9 @@ module.exports = {
     client: {
         initToken: initTokenClient,
         // rollToken: rollTokenClient,
-        decryptNextToken: decryptNextTokenClient,
+        decryptNextToken: decryptNextToken,
         getSessionData: getSessionData,
+        getToken: getToken,
         setToken: setToken
     }
 };

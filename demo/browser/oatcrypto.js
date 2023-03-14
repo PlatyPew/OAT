@@ -1,42 +1,44 @@
 const sodium = require("libsodium-wrappers");
-const browserCrypto = require("browser-crypto");
+const browserCrypto = require("browserify-aes");
 const randomBytes = require('randombytes');
 const {sha3_256} = require('js-sha3');
+
+const _fromHexString = (hexString) => {
+    return Uint8Array.from(hexString.match(/.{1,2}/g).map((byte) => parseInt(byte, 16)));
+  }
 
 /**
  * creates necessary directories for key storage and initialise OAT_PASS
  */
-const OAT_PASS = sha3_256.update('123').hex();
+const OAT_PASS = _fromHexString(sha3_256.update('123').hex());
 
-const setLocalStorage = (clientId, name, value) => {
-    let clientObj = JSON.parse(localStorage.getItem(clientId));
+const setLocalStorage = (domain, name, value) => {
+    let clientObj = JSON.parse(localStorage.getItem(domain));
     if (clientObj == null) {
         // Init
-        window.localStorage.setItem(clientId,JSON.stringify({name:value}));
+        let clientObj = {};
+        clientObj[name] = value;
+        window.localStorage.setItem(domain,JSON.stringify(clientObj));
     }
     else {
         clientObj[name] = value;
-        window.localStorage.setItem(clientId,JSON.stringify(clientObj));
+        window.localStorage.setItem(domain,JSON.stringify(clientObj));
     }
 }
 
-const getLocalStorage = (clientId, name) => {
+const getLocalStorage = (domain, name) => {
+    let value = null;
     try {
-        let clientObj = JSON.parse(localStorage.getItem(clientId));
-        if (clientObj[name] != null) {
-            return clientObj[name];
+        let domainObj = JSON.parse(window.localStorage.getItem(domain));
+        if (domainObj[name] != null) {
+            value = domainObj[name];
         }
+        return value;
     }
     catch {}
     finally {
-        return null;
+        return value;
     }
-}
-
-const _bufferToHex =  (buffer) => { // buffer is an ArrayBuffer
-    return [...new Uint8Array(buffer)]
-        .map(x => x.toString(16).padStart(2, '0'))
-        .join('');
 }
 
 /**
@@ -49,8 +51,8 @@ const _bufferToHex =  (buffer) => { // buffer is an ArrayBuffer
  *     @param {string} data.apiKey - the api key to sign
  * @returns {Promise<Buffer>} signature and data
  */
-const sign = async (domainName, { apiKey, domain }) => {
-    const privKey = await _getSigningKey(domainName);
+const sign = (domainName, { apiKey, domain }) => {
+    const privKey = _getSigningKey(domainName);
 
     const unsignedData = Buffer.concat([apiKey, Buffer.from(domain)]);
     const signature = sodium.crypto_sign(unsignedData, privKey);
@@ -65,10 +67,15 @@ const sign = async (domainName, { apiKey, domain }) => {
  * @param {string} domain - domain
  * @returns {Promise<Uint8Array>} signing key
  */
-const _getSigningKey = async (domain) => {
-    const signingKey = getLocalStorage(clientId,"sharedKey");
+const _getSigningKey = (domain) => {
+    const signingKey = getLocalStorage(domain,"signingKey");
 
-    return new Uint8Array(_decryptKey(signingKey));
+    if(signingKey == null) return null;
+
+    let signingKeyArr = JSON.parse(signingKey);
+    signingKeyArr = new Uint8Array(signingKeyArr);
+
+    return new Uint8Array(_decryptKey(signingKeyArr));
 };
 
 /**
@@ -79,7 +86,15 @@ const _getSigningKey = async (domain) => {
  * @param {Uint8Array} signingKey - signing key
  */
 const _setSigningKey = async (domain, signingKey) => {
-    setLocalStorage(clientId, "signingKey", signingKey);
+    let encSigningKey = _encryptKey(signingKey);
+
+    let signingKeyArr = Array.from // if available
+    ? Array.from(encSigningKey) // use Array#from
+    : [].map.call(encSigningKey, (v => v)); // otherwise map()
+
+    signingKeyArr = JSON.stringify(signingKeyArr);
+
+    setLocalStorage(domain, "signingKey", signingKeyArr);
 };
 
 /**
@@ -90,11 +105,12 @@ const _setSigningKey = async (domain, signingKey) => {
  * @param {Buffer} encApiKey - encrypted api key
  * @returns {Promise<Buffer>} decrypted api key
  */
-const decrypt = async (domain, encApiKey) => {
-    const sharedKey = await _getSharedKeyClient(domain);
+const decrypt = (domain, encApiKey) => {
+    const sharedKey =  _getSharedKeyClient(domain);
 
     const iv = encApiKey.slice(0, 12);
     const enc = encApiKey.slice(12);
+
     const decipher = browserCrypto.createDecipheriv("aes-256-gcm", sharedKey, iv);
     let dec = decipher.update(enc);
 
@@ -108,8 +124,8 @@ const decrypt = async (domain, encApiKey) => {
  * @returns {Buffer} encrypted key
  */
 const _encryptKey = (decKey) => {
-    const iv = randomBytes(12);
-    const cipher = browserCrypto.createCipheriv("aes-256-gcm", Buffer.from(OAT_PASS), iv);
+    const iv =  new Uint8Array(randomBytes(12));
+    const cipher = browserCrypto.createCipheriv("aes-256-gcm", OAT_PASS, iv);
     let enc = cipher.update(decKey);
     cipher.final();
 
@@ -125,7 +141,7 @@ const _encryptKey = (decKey) => {
 const _decryptKey = (encKey) => {
     const iv = encKey.slice(0, 12);
     const enc = encKey.slice(12);
-    const decipher = browserCrypto.createDecipheriv("aes-256-gcm", Buffer.from(OAT_PASS), iv);
+    const decipher = browserCrypto.createDecipheriv("aes-256-gcm", OAT_PASS, iv);
     let dec = decipher.update(enc);
 
     return new Uint8Array(dec);
@@ -138,10 +154,15 @@ const _decryptKey = (encKey) => {
  * @param {string} domain - domain
  * @returns {Promise<Uint8Array>} shared key
  */
-const _getSharedKeyClient = async (domain) => {
-    const sharedEncKey = getLocalStorage(domain,"sharedKey");
+const _getSharedKeyClient = (domain) => {
+    const encSharedKey = getLocalStorage(domain,"sharedKey");
 
-    return _decryptKey(sharedEncKey);
+    if(encSharedKey == null) return null;
+
+    let encSharedKeyArr = JSON.parse(encSharedKey);
+    encSharedKeyArr = new Uint8Array(encSharedKeyArr);
+
+    return _decryptKey(encSharedKeyArr);
 };
 
 /**
@@ -152,7 +173,15 @@ const _getSharedKeyClient = async (domain) => {
  * @param {Uint8Array} sharedKey - shared key
  */
 const _setSharedKeyClient = async (domain, sharedKey) => {
-    setLocalStorage(domain,"sharedKey", sharedKey);
+    let encSharedKey = _encryptKey(sharedKey);
+
+    let sharedKeyArr = Array.from // if available
+    ? Array.from(encSharedKey) // use Array#from
+    : [].map.call(encSharedKey, (v => v)); // otherwise map()
+
+    sharedKeyArr = JSON.stringify(sharedKeyArr);
+
+    setLocalStorage(domain,"sharedKey", sharedKeyArr);
 };
 
 /**
@@ -162,7 +191,7 @@ const _setSharedKeyClient = async (domain, sharedKey) => {
  * @param {Uint8Array} theirPubKey - exchanger public key
  * @param {Uint8Array} outPrivKey - own private key
  * @returns {Object} client id and shared key
- *     @param {string} clientId - client id of shared key
+ *     @param {string} domain - client id of shared key
  *     @param {Promise<Uint8Array>} sharedKey - the shared key
  */
 const _genSharedKey = async (theirPubKey, myKeyPair) => {
@@ -188,11 +217,12 @@ const initClientKeys = async (domain, getTheirBoxPubKeyFunc) => {
             Buffer.from(mySignKeyPair.publicKey)
         )
     );
+    if(await _getSharedKeyClient(domain) == null) {
+        const { sharedKey } = await _genSharedKey(theirBoxPubKey, myBoxKeyPair);
 
-    const { sharedKey } = await _genSharedKey(theirBoxPubKey, myBoxKeyPair);
-
-    await _setSharedKeyClient(domain, sharedKey);
-    await _setSigningKey(domain, mySignKeyPair.privateKey);
+        await _setSharedKeyClient(domain, sharedKey);
+        await _setSigningKey(domain, mySignKeyPair.privateKey);
+    }
 };
 
 module.exports = {

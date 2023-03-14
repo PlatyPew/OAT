@@ -11,7 +11,12 @@ const KEY_STORE = `${process.env.HOME || "."}/.oatkeys`;
  */
 if (!process.env.OAT_PASS || process.env.OAT_PASS.length < 16)
     throw new Error("OAT_PASS should be at least 16 characters long");
-const OAT_PASS = crypto.createHash("sha3-256").update(process.env.OAT_PASS).digest();
+
+let OAT_PASS;
+crypto.pbkdf2(process.env.OAT_PASS, require("os").hostname(), 33198, 32, "sha3-512", (_, key) => {
+    OAT_PASS = key;
+    module.exports.OAT_PASS = OAT_PASS;
+});
 
 if (!fs.existsSync(KEY_STORE)) fs.mkdirSync(KEY_STORE);
 
@@ -188,7 +193,7 @@ const decrypt = async (domain, encApiKey) => {
  */
 const _encryptKey = (decKey) => {
     const iv = crypto.randomBytes(12);
-    const cipher = crypto.createCipheriv("aes-256-gcm", Buffer.from(OAT_PASS), iv);
+    const cipher = crypto.createCipheriv("aes-256-gcm", OAT_PASS, iv);
     let enc = cipher.update(decKey);
     cipher.final();
 
@@ -204,7 +209,7 @@ const _encryptKey = (decKey) => {
 const _decryptKey = (encKey) => {
     const iv = encKey.slice(0, 12);
     const enc = encKey.slice(12);
-    const decipher = crypto.createDecipheriv("aes-256-gcm", Buffer.from(OAT_PASS), iv);
+    const decipher = crypto.createDecipheriv("aes-256-gcm", OAT_PASS, iv);
     let dec = decipher.update(enc);
 
     return new Uint8Array(dec);

@@ -18,13 +18,6 @@ function _readToken(headers) {
       return { token:undefined, init:undefined };
 }
 
-function _getNextToken(domain) {
-    var promise = new Promise(function(resolve, reject) {
-        resolve(oatclient.decryptNextToken(domain));
-    });
-    return promise.then()
-}
-
 (async () => {
     await require("libsodium-wrappers").ready;
 

@@ -28,22 +28,22 @@ const MONGO = "mongodb://database/oat";
             {
                 email: "alford@oat.com",
                 password:
-                    "a95a503d26a8d0282f213b7b692057a10f74ac11b9e686755498765900acbf54a88affd2ad28538752084814332e965a88b1d1c8e070f4423b9f150cf6174448",
+                    "3274f8455be84b8c7d79f9bd93e6c8520d13f6bd2855f3bb9c006ca9f3cce25d4b924d0370f8af4e27a350fd2baeef58bc37e0f4e4a403fe64c98017fa012757",
             },
             {
                 email: "daryl@oat.com",
                 password:
-                    "a95a503d26a8d0282f213b7b692057a10f74ac11b9e686755498765900acbf54a88affd2ad28538752084814332e965a88b1d1c8e070f4423b9f150cf6174448",
+                    "3274f8455be84b8c7d79f9bd93e6c8520d13f6bd2855f3bb9c006ca9f3cce25d4b924d0370f8af4e27a350fd2baeef58bc37e0f4e4a403fe64c98017fa012757",
             },
             {
                 email: "joshua@oat.com",
                 password:
-                    "a95a503d26a8d0282f213b7b692057a10f74ac11b9e686755498765900acbf54a88affd2ad28538752084814332e965a88b1d1c8e070f4423b9f150cf6174448",
+                    "3274f8455be84b8c7d79f9bd93e6c8520d13f6bd2855f3bb9c006ca9f3cce25d4b924d0370f8af4e27a350fd2baeef58bc37e0f4e4a403fe64c98017fa012757",
             },
             {
                 email: "kunfeng@oat.com",
                 password:
-                    "a95a503d26a8d0282f213b7b692057a10f74ac11b9e686755498765900acbf54a88affd2ad28538752084814332e965a88b1d1c8e070f4423b9f150cf6174448",
+                    "3274f8455be84b8c7d79f9bd93e6c8520d13f6bd2855f3bb9c006ca9f3cce25d4b924d0370f8af4e27a350fd2baeef58bc37e0f4e4a403fe64c98017fa012757",
             },
         ]);
     }
@@ -69,15 +69,14 @@ app.use(bodyParser.json({ limit: "8mb" }));
 
 app.use(oat.init({ cart: {} }));
 
-app.get("/", (_, res) => {
-    res.sendFile(path.join(__dirname, "/src/public/index.html"));
-});
-
 const auth = require("./src/routes/auth");
 app.use("/api/auth", auth);
 
 const market = require("./src/routes/market");
 app.use("/api/market", market);
+
+const public = require("./src/routes/public");
+app.use("/", public);
 
 // Start Server
 console.log(`Waiting to connect to ${MONGO}`);

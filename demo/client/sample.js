@@ -1,8 +1,12 @@
 const oat = require("@platypew/oatoken").client;
 const axios = require("axios");
 const fs = require("fs");
+const readline = require("readline").createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
 
-const API_URL = "https://localhost:3000";
+const API_URL = "https://www.charming-brahmagupta.cloud";
 
 const keyExchange = async () => {
     const domain = new URL(API_URL).hostname;
@@ -34,7 +38,7 @@ const keyExchange = async () => {
     }
 };
 
-const getRequest = async (apiPath) => {
+const _getRequest = async (apiPath) => {
     const domain = new URL(API_URL).hostname;
     try {
         let data;
@@ -52,7 +56,7 @@ const getRequest = async (apiPath) => {
     }
 };
 
-const postRequest = async (apiPath, fields) => {
+const _postRequest = async (apiPath, fields) => {
     const domain = new URL(API_URL).hostname;
     try {
         let data;
@@ -71,35 +75,73 @@ const postRequest = async (apiPath, fields) => {
 };
 
 const getStoreInventory = async () => {
-    const data = await getRequest("/api/market/store/get");
+    const data = await _getRequest("/api/market/store/get");
     return data.response;
 };
 
 const getCartInventory = async () => {
-    const data = await getRequest("/api/market/cart/get");
+    const data = await _getRequest("/api/market/cart/get");
     return data.response;
 };
 
 const setCartInventory = async (fields) => {
-    const data = await postRequest("/api/market/cart/set", fields);
+    const data = await _postRequest("/api/market/cart/set", fields);
     return data.response;
 };
 
 const buyItems = async () => {
-    const data = await postRequest("/api/market/store/buy", {});
+    const data = await _postRequest("/api/market/store/buy", {});
     return data.response;
+};
+
+const restockStoreInventory = async () => {
+    const data = await _postRequest("/api/market/store/restock", {});
+    return data.response;
+};
+
+const prompt = (question) => {
+    return new Promise((resolve, reject) => {
+        readline.question(question, (answer) => {
+            resolve(answer);
+        });
+    });
 };
 
 (async () => {
     await require("libsodium-wrappers").ready;
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
     await keyExchange();
-    /* console.log(await getStoreInventory()); */
-    console.log(await setCartInventory({ apple: 20 }));
-    console.log(await buyItems());
-    console.log(await getCartInventory());
-    console.log(await buyItems());
-    console.log(await getStoreInventory());
-    /* await postRequest(); */
+
+    while (true) {
+        let option = await prompt(
+            `Welcome to the OAT store! What would you like to do?
+1. List items in the store
+2. List items in your cart
+3. Add items to your cart
+4. Buy items in your cart
+5. Restock store items
+0. Exit
+
+> `
+        );
+
+        option = parseInt(option);
+        if (isNaN(option) || option < 1 || option > 5) {
+            readline.close();
+            break;
+        }
+
+        const funcs = [
+            getStoreInventory,
+            getCartInventory,
+            setCartInventory,
+            buyItems,
+            restockStoreInventory,
+        ];
+
+        let items = {};
+        if (option === 3) items = JSON.parse(await prompt("Enter JSON string here:\n> "));
+
+        console.log(await funcs[option - 1](items));
+    }
 })();

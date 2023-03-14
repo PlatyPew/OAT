@@ -60,8 +60,6 @@ const init = (initFields) => async (req, res, next) => {
     } catch {
         return res.status(400).json({ response: "Invalid Token" });
     }
-
-    return next();
 };
 
 /**

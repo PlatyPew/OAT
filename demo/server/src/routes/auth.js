@@ -20,7 +20,7 @@ router.post(
     },
     oat.initpath,
     (_, res) => {
-        return res.json({ response: true });
+        return res.redirect("/");
     }
 );
 

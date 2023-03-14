@@ -19,11 +19,19 @@ const keyExchange = async () => {
     } catch {}
 
     try {
-        const response = await axios.post(`${API_URL}/api/auth/login`, {
-            email: "daryl@oat.com",
-            password:
-                "3274f8455be84b8c7d79f9bd93e6c8520d13f6bd2855f3bb9c006ca9f3cce25d4b924d0370f8af4e27a350fd2baeef58bc37e0f4e4a403fe64c98017fa012757",
-        });
+        const response = await axios.post(
+            `${API_URL}/api/auth/login`,
+            {
+                email: "daryl@oat.com",
+                password: "abc123",
+            },
+            {
+                maxRedirects: 0,
+                validateStatus: (status) => {
+                    return status >= 200 && status <= 302;
+                },
+            }
+        );
         const oatPath = response.headers.oatinit;
 
         await oat.initToken(domain, async (requestToken) => {

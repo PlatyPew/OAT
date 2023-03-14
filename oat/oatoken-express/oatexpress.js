@@ -34,6 +34,8 @@ const initpath = (_, res, next) => {
  * @async
  */
 const init = (initFields) => async (req, res, next) => {
+    if (req.protocol !== "https") return res.status(301).send("Please Use HTTPS");
+
     const dirname = path.dirname(req.path);
     const basename = path.basename(req.path);
 

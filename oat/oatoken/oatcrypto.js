@@ -6,6 +6,31 @@ require("dotenv").config();
 
 const KEY_STORE = `${process.env.HOME || "."}/.oatkeys`;
 
+const KEY_CACHE = new Map();
+const getKeyCache = (clientId, keyType) => {
+    const key = clientId + keyType;
+    const entry = KEY_CACHE.get(key);
+
+    if (!entry) return null;
+
+    clearTimeout(entry.timer);
+    entry.timer = setTimeout(() => {
+        KEY_CACHE.delete(key);
+    }, 15 * 60 * 1000);
+
+    return entry.value;
+};
+
+const setKeyCache = (clientId, keyType, value) => {
+    const key = clientId + keyType;
+    KEY_CACHE.set(key, {
+        value: value,
+        timer: setTimeout(() => {
+            KEY_CACHE.delete(clientId);
+        }, 15 * 60 * 1000),
+    });
+};
+
 /**
  * creates necessary directories for key storage and initialise OAT_PASS
  */
@@ -125,10 +150,17 @@ const _setSigningKey = async (domain, signingKey) => {
  * @returns {Promise<Uint8Array>} verification key
  */
 const _getVerifyingKey = async (clientId) => {
+    let verifyingKey = getKeyCache(clientId, "verifying");
+    if (verifyingKey !== null) return verifyingKey;
+
     await checkKeyStore(clientId);
 
-    const verifyingKey = await fs.promises.readFile(`${KEY_STORE}/${clientId}/verifying.key`);
-    return new Uint8Array(_decryptKey(verifyingKey));
+    const verifyingEncKey = await fs.promises.readFile(`${KEY_STORE}/${clientId}/verifying.key`);
+    verifyingKey = new Uint8Array(_decryptKey(verifyingEncKey));
+
+    setKeyCache(clientId, "verifying", verifyingKey);
+
+    return verifyingKey;
 };
 
 /**
@@ -139,6 +171,8 @@ const _getVerifyingKey = async (clientId) => {
  * @param {Uint8Array} verifyingKey - verification key
  */
 const _setVerifyingKey = async (clientId, verifyingKey) => {
+    setKeyCache(clientId, "verifying", verifyingKey);
+
     await makeKeyStore(clientId);
 
     await fs.promises.writeFile(
@@ -237,10 +271,17 @@ const _getSharedKeyClient = async (domain) => {
  * @returns {Promise<Uint8Array>} shared key
  */
 const _getSharedKeyServer = async (clientId) => {
+    let sharedKey = getKeyCache(clientId, "shared");
+    if (sharedKey !== null) return sharedKey;
+
     await checkKeyStore(clientId);
 
     const sharedEncKey = await fs.promises.readFile(`${KEY_STORE}/${clientId}/shared.key`);
-    return new Uint8Array(_decryptKey(sharedEncKey));
+    sharedKey = new Uint8Array(_decryptKey(sharedEncKey));
+
+    setKeyCache(clientId, "shared", sharedKey);
+
+    return sharedKey;
 };
 
 /**
@@ -264,6 +305,8 @@ const _setSharedKeyClient = async (domain, sharedKey) => {
  * @param {Uint8Array} sharedKey - shared key
  */
 const _setSharedKeyServer = async (clientId, sharedKey) => {
+    setKeyCache(clientId, "shared", sharedKey);
+
     await makeKeyStore(clientId);
 
     await fs.promises.writeFile(`${KEY_STORE}/${clientId}/shared.key`, _encryptKey(sharedKey));
@@ -356,6 +399,9 @@ module.exports = {
     initClientKeys: initClientKeys,
     initServerKeys: initServerKeys,
     listIds: listIds,
+
+    getKeyCache: getKeyCache,
+    setKeyCache: setKeyCache,
 
     _getSigningKey: _getSigningKey,
     _setSigningKey: _setSigningKey,

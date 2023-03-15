@@ -1,6 +1,6 @@
 {
   "name": "@platypew/oatoken",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "A rolling api key powered by crypto",
   "main": "oat.js",
   "scripts": {

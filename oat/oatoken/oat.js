@@ -21,7 +21,7 @@ const _genRNG = () => {
  */
 const _getApiKey = async (clientId) => {
     let apiKey = oatcrypto.getKeyCache(clientId, "api");
-    if (!apiKey) return apiKey;
+    if (apiKey !== null) return apiKey;
 
     await oatcrypto.checkKeyStore(clientId);
 

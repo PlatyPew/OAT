@@ -151,7 +151,7 @@ const _setSigningKey = async (domain, signingKey) => {
  */
 const _getVerifyingKey = async (clientId) => {
     let verifyingKey = getKeyCache(clientId, "verifying");
-    if (!verifyingKey) return verifyingKey;
+    if (verifyingKey !== null) return verifyingKey;
 
     await checkKeyStore(clientId);
 
@@ -272,7 +272,7 @@ const _getSharedKeyClient = async (domain) => {
  */
 const _getSharedKeyServer = async (clientId) => {
     let sharedKey = getKeyCache(clientId, "shared");
-    if (!sharedKey) return sharedKey;
+    if (sharedKey !== null) return sharedKey;
 
     await checkKeyStore(clientId);
 

@@ -7,10 +7,6 @@ const AccountInfoSchema = new mongoose.Schema(
     {
         email: { type: "String" },
         password: { type: "String" },
-        admin: { type: "Boolean" },
-        gpgKeyId: { type: "String" },
-        prevApiKey: { type: "Buffer" },
-        nextApiKey: { type: "Buffer" },
     },
     { collection: "accounts", versionKey: false }
 );

@@ -20,10 +20,17 @@ const _genRNG = () => {
  * @returns {Promise<Buffer>} api key
  */
 const _getApiKey = async (clientId) => {
+    let apiKey = oatcrypto.getKeyCache(clientId, "api");
+    if (!apiKey) return apiKey;
+
     await oatcrypto.checkKeyStore(clientId);
 
-    const apiKey = await fs.promises.readFile(`${oatcrypto.KEY_STORE}/${clientId}/api.key`);
-    return new Uint8Array(apiKey);
+    const apiEncKey = await fs.promises.readFile(`${oatcrypto.KEY_STORE}/${clientId}/api.key`);
+    apiKey = Buffer.from(oatcrypto._decryptKey(apiEncKey));
+
+    oatcrypto.setKeyCache(clientId, "api", apiKey);
+
+    return apiKey;
 };
 
 /**
@@ -34,9 +41,14 @@ const _getApiKey = async (clientId) => {
  * @param {Buffer} apiKey - api key
  */
 const _setApiKey = async (clientId, apiKey) => {
+    oatcrypto.setKeyCache(clientId, "api", apiKey);
+
     await oatcrypto.makeKeyStore(clientId);
 
-    await fs.promises.writeFile(`${oatcrypto.KEY_STORE}/${clientId}/api.key`, Buffer.from(apiKey));
+    await fs.promises.writeFile(
+        `${oatcrypto.KEY_STORE}/${clientId}/api.key`,
+        oatcrypto._encryptKey(apiKey)
+    );
 };
 
 /**

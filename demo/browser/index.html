@@ -3,9 +3,15 @@
   <head>
     <title>OAT App</title>
     <script src="bundle.js"></script>
+    <script src="getPassword.js" type="module"></script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <h1>OAT</h1>
+    <form id="password-form"> 
+      <label for="password">Password:</label>
+      <input type="password" id="password" placeholder="At least 12 characters">
+      <input type="submit" value="Use">
+    </form>
   </body>
 </html>

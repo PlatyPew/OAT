@@ -43,11 +43,13 @@ const deleteKeyCache = (clientId) => {
 if (!process.env.OAT_PASS || process.env.OAT_PASS.length < 16)
     throw new Error("OAT_PASS should be at least 16 characters long");
 
-let OAT_PASS;
-crypto.pbkdf2(process.env.OAT_PASS, require("os").hostname(), 33198, 32, "sha3-512", (_, key) => {
-    OAT_PASS = key;
-    module.exports.OAT_PASS = OAT_PASS;
-});
+const OAT_PASS = crypto.pbkdf2Sync(
+    process.env.OAT_PASS,
+    require("os").hostname(),
+    33198,
+    32,
+    "sha3-512"
+);
 
 if (!fs.existsSync(KEY_STORE)) fs.mkdirSync(KEY_STORE);
 

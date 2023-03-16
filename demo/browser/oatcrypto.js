@@ -2,7 +2,7 @@ const sodium = require("libsodium-wrappers");
 const browserCrypto = require("browserify-aes");
 const randomBytes = require('randombytes');
 const {sha3_256} = require('js-sha3');
-var OAT_PASS = "";
+let OAT_PASS = "";
 
 const _fromHexString = (hexString) => {
     return Uint8Array.from(hexString.match(/.{1,2}/g).map((byte) => parseInt(byte, 16)));
@@ -14,7 +14,6 @@ const _fromHexString = (hexString) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "sendPassword") {
         OAT_PASS = _fromHexString(sha3_256.update(message.password).hex());
-        console.log(OAT_PASS);
     }
 });
 

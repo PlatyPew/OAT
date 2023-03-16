@@ -31,6 +31,12 @@ const setKeyCache = (clientId, keyType, value) => {
     });
 };
 
+const deleteKeyCache = (clientId) => {
+    KEY_CACHE.delete(`${clientId}sharing`);
+    KEY_CACHE.delete(`${clientId}verifying`);
+    KEY_CACHE.delete(`${clientId}api`);
+};
+
 /**
  * creates necessary directories for key storage and initialise OAT_PASS
  */
@@ -402,6 +408,7 @@ module.exports = {
 
     getKeyCache: getKeyCache,
     setKeyCache: setKeyCache,
+    deleteKeyCache: deleteKeyCache,
 
     _getSigningKey: _getSigningKey,
     _setSigningKey: _setSigningKey,

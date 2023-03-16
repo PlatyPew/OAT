@@ -86,6 +86,25 @@ const roll = async (req, res, next) => {
     next();
 };
 
+const deinit = async (req, res, next) => {
+    const requestToken = req.get("OAT");
+    if (!requestToken) return next();
+    try {
+        if (!(await oat.authToken(DOMAIN, requestToken))) return next();
+        const clientId = Buffer.from(requestToken.split("|")[1], "base64")
+            .slice(32, 52)
+            .toString("hex")
+            .toUpperCase();
+
+        oat.deinitToken(clientId);
+        res.setHeader("OATDEINIT", DOMAIN);
+    } catch {
+        return res.status(400).json({ response: "Invalid Token" });
+    }
+
+    next();
+};
+
 /**
  * gets the session data of the response token
  *
@@ -114,6 +133,7 @@ const setsession = async (res, newFields) => {
 module.exports = {
     initpath: initpath,
     init: init,
+    deinit: deinit,
     roll: roll,
     getsession: getsession,
     setsession: setsession,

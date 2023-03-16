@@ -338,11 +338,54 @@ const initTokenServer = async (initialisationToken, newFields) => {
     return `${tokenHeader}|${tokenFooter}`;
 };
 
+/**
+ * deletes keys for that domain
+ *
+ * @async
+ * @param {string} domain - domain of keys
+ * @returns {Promise<boolean>} success
+ */
+const deinitTokenClient = async (domain) => {
+    if (!domain) return false;
+    if (domain.includes("../")) return false;
+
+    try {
+        await fs.promises.rm(`${oatcrypto.KEY_STORE}/${domain}`, { recursive: true });
+    } catch {
+        return false;
+    }
+
+    return true;
+};
+
+/**
+ * deletes keys for that client id
+ *
+ * @async
+ * @param {string} clientId - client id
+ * @returns {Promise<boolean>} success
+ */
+const deinitTokenServer = async (clientId) => {
+    if (!clientId) return false;
+    if (clientId.includes("../")) return false;
+
+    oatcrypto.deleteKeyCache(clientId);
+
+    try {
+        await fs.promises.rm(`${oatcrypto.KEY_STORE}/${clientId}`, { recursive: true });
+    } catch {
+        return false;
+    }
+
+    return true;
+};
+
 module.exports = {
     client: {
         initToken: initTokenClient,
         rollToken: rollTokenClient,
         getSessionData: getSessionData,
+        deinitToken: deinitTokenClient,
     },
     server: {
         initToken: initTokenServer,
@@ -350,5 +393,6 @@ module.exports = {
         rollToken: rollTokenServer,
         getSessionData: getSessionData,
         setSessionData: setSessionData,
+        deinitToken: deinitTokenServer,
     },
 };

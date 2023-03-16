@@ -5,7 +5,7 @@ const oatcrypto = require("./oatcrypto");
  *
  * @async
  * @param {string} clientId - client id
- * @returns {Promise<string>} api token
+ * @returns {string} api token
  */
 const getToken = (clientId) => {
     return oatcrypto.getLocalStorage(clientId, "token");
@@ -91,7 +91,7 @@ const decryptNextToken = (domain) => {
  * send public keys and store response token
  *
  * @param {function} initConn - function that returns response token from server
- *     @param {Promise<string>} initial request token
+ *     @param {string} initial request token
  */
 const initTokenClient = async (domain, initConn) => {
     await oatcrypto.initClientKeys(domain, async (ourBoxPubKey, ourSignPubKey) => {

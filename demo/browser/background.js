@@ -2,10 +2,23 @@
 
 const oatclient = require("./oat").client;
 
+/**
+ * insert key-value pair into request header/object
+ * 
+ * @param {Object} headers - requestHeaders
+ * @param {string} name - key
+ * @param {string} value - value
+ */
 function insertHeader(headers, name, value) {
     headers.push({name, value});
 }
 
+/**
+ * read token value and initialisation condition
+ * 
+ * @param {Object} headers - responseHeaders
+ * @returns {Object} token and boolean value to indicate OATINIT (true) or OAT (false)
+ */
 function _readToken(headers) {
     for (let i = 0; i < headers.length; i++) {
         if (headers[i].name.toLowerCase() === "oat") {

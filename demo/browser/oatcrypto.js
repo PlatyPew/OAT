@@ -17,6 +17,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 });
 
+/**
+ * store key-value pair into window.localStorage
+ * 
+ * @param {string} domain - domain name for stored values
+ * @param {string} name - key
+ * @param {string} value - value
+ */
 const setLocalStorage = (domain, name, value) => {
     let clientObj = JSON.parse(window.localStorage.getItem(domain));
     if (clientObj === null) {
@@ -31,6 +38,13 @@ const setLocalStorage = (domain, name, value) => {
     window.localStorage.setItem(domain,JSON.stringify(clientObj));
 }
 
+/**
+ * retrieve value from key name in object with domain name in window.localStorage
+ * 
+ * @param {string} domain - domain name for stored values window.localStorage
+ * @param {string} name - key
+ * @returns {string} value from key
+ */
 const getLocalStorage = (domain, name) => {
     let value = null;
     try {
@@ -67,9 +81,8 @@ const sign = (domainName, { apiKey, domain }) => {
 /**
  * read and decrypt signing key
  *
- * @async
  * @param {string} domain - domain
- * @returns {Promise<Uint8Array>} signing key
+ * @returns {Uint8Array} signing key
  */
 const _getSigningKey = (domain) => {
     const signingKey = getLocalStorage(domain,"signingKey");
@@ -87,7 +100,7 @@ const _getSigningKey = (domain) => {
  *
  * @async
  * @param {string} domain - domain
- * @param {Uint8Array} signingKey - signing key
+ * @param {Promise<Uint8Array>} signingKey - signing key
  */
 const _setSigningKey = async (domain, signingKey) => {
     let encSigningKey = _encryptKey(signingKey);
@@ -104,10 +117,9 @@ const _setSigningKey = async (domain, signingKey) => {
 /**
  * decrypt api key using shared key
  *
- * @async
  * @param {string} domain - domain name
  * @param {Buffer} encApiKey - encrypted api key
- * @returns {Promise<Buffer>} decrypted api key
+ * @returns {Buffer} decrypted api key
  */
 const decrypt = (domain, encApiKey) => {
     const sharedKey =  _getSharedKeyClient(domain);
@@ -160,9 +172,8 @@ const _decryptKey = (encKey) => {
 /**
  * gets and decrypts shared key server
  *
- * @async
  * @param {string} domain - domain
- * @returns {Promise<Uint8Array>} shared key
+ * @returns {Uint8Array} shared key
  */
 const _getSharedKeyClient = (domain) => {
     const encSharedKey = getLocalStorage(domain,"sharedKey");
@@ -180,7 +191,7 @@ const _getSharedKeyClient = (domain) => {
  *
  * @async
  * @param {string} domain - domain
- * @param {Uint8Array} sharedKey - shared key
+ * @param {Promise<Uint8Array>} sharedKey - shared key
  */
 const _setSharedKeyClient = async (domain, sharedKey) => {
     let encSharedKey = _encryptKey(sharedKey);

@@ -51,6 +51,8 @@ Examples of how to use OAT
 
 ### Client
 
+Example here.
+
 Initialising Token
 
 _If the server is running an ExpressJS instance, to initialise the token, `/oat/<random value>`. This path is provided in the `OATINIT` header usually after some form of authentication._
@@ -86,6 +88,8 @@ const rollTokenWithServer = async (url) => {
 ```
 
 ### Server
+
+Example here.
 
 Using ExpressJS (OAT is only supported using HTTPS)
 
@@ -137,7 +141,103 @@ app.listen(3000);
 
 ## Documentation
 
-TODO
+### Package `@platypew/oatoken`
+
+`oat.client.initToken(domain, initConn)`
+
+-   `domain` \<string\>
+-   `initConn` \<Function\>
+    -   `initialisationToken` \<string\>
+    -   Returns: Promise\<string\>
+
+This function sends public keys to a server and then stores the response token. The function takes two parameters: the `domain` of the server and a function `initConn` that returns a promise containing the initial request token.
+
+<br />
+
+`oat.client.rollToken(domain, initConn)`
+
+-   `domain` \<string\>
+-   `initConn` \<Function\>
+    -   `initialisationToken` \<string\>
+    -   Returns: Promise\<string\>
+
+This function is used to generate a new token. It takes in two parameters: the server `domain` and a function `initConn` for initiating the connection with the server.
+
+<br />
+
+`oat.client.getSessionData(token)`
+
+-   `token` \<string\>
+-   Returns: \<Object\>
+
+This function is used to get the session data from the token. It takes in one parameter: the request token and returns the JSON object stored in the token.
+
+<br />
+
+`oat.client.deinitToken(domain)`
+
+-   `domain` \<string\>
+-   Returns: \<boolean\>
+
+This function is used to delete the session keys on the client. It takes in one parameter: the `domain` of the session and returns if the token has been successfully removed.
+
+<br />
+
+`oat.server.initToken(initialisationToken, newFields)`
+
+-   `initialisationToken` \<string\>
+-   `newFields` \<Object\>
+-   Returns: \<string\>
+
+This function is used to initialise the session keys on the server and return the response token. It takes in two parameters: the `initialisationToken` from the client and a JSON object `newFields` to use in the token.
+
+<br />
+
+`oat.server.authToken(serverDomain, token)`
+
+-   `serverDomain` \<string\>
+-   `token` \<string\>
+-   Returns: \<boolean\>
+
+This function is used to authenticate the request token from the client. It takes in two parameters: `serverDomain` which is the domain of the server it is running on and `token` which is the request token from the client. It returns true if the token is valid.
+
+<br />
+
+`oat.server.rollToken(token, newFields)`
+
+-   `token` \<string\>
+-   `newFields` \<Object\>
+-   Returns: \<string\>
+
+this function is used to roll and provide the response token from the server, It takes two parameters: `token` which is is the request token, and `newFields` which is the JSON data to insert into the response token
+
+<br />
+
+`oat.server.getSessionData(token)`
+
+-   `token` \<string\>
+-   Returns: \<Object\>
+
+This function is used to get the session data from the token. It takes in one parameter: the request token and returns the JSON object stored in the token.
+
+<br />
+
+`oat.server.setSessionData(token, newFields)`
+
+-   `token` \<string\>
+-   `newFields` \<Object\>
+-   Returns: \<string\>
+
+This function is used to insert session data into the response token. It takes two parameters: `token` which is the response token and `newFields` which is JSON data to be updated.
+
+<br />
+
+`oat.server.deinitToken(clientId)`
+
+-   `clientId` \<string\>
+-   Returns: \<boolean\>
+
+This function is used to delete the session keys on the server. It takes in one parameter: the `domain` of the session and returns if the token has been successfully removed.
 
 ## Contributors
 

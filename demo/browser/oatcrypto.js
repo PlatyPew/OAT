@@ -113,13 +113,19 @@ const _setSigningKey = async (domain, signingKey) => {
 const decrypt = (domain, encApiKey) => {
     const sharedKey =  _getSharedKeyClient(domain);
 
-    const iv = encApiKey.slice(0, 12);
-    const enc = encApiKey.slice(12);
+    if (sharedKey != null) {
+        const iv = encApiKey.slice(0, 12);
+        const enc = encApiKey.slice(12);
 
-    const decipher = browserCrypto.createDecipheriv("aes-256-gcm", sharedKey, iv);
-    let dec = decipher.update(enc);
+        const decipher = browserCrypto.createDecipheriv("aes-256-gcm", sharedKey, iv);
+        let dec = decipher.update(enc);
 
-    return dec;
+        return dec;
+    }
+    else {
+        return null;
+    }
+    
 };
 
 /**
@@ -213,20 +219,22 @@ const _genSharedKey = async (theirPubKey, myKeyPair) => {
  * @param {function} getTheirBoxPubKeyFunc - anon function to get server box public key
  */
 const initClientKeys = async (domain, getTheirBoxPubKeyFunc) => {
-    const myBoxKeyPair = sodium.crypto_box_keypair();
-    const mySignKeyPair = sodium.crypto_sign_keypair();
+    if (OAT_PASS !== ""){
+        const myBoxKeyPair = sodium.crypto_box_keypair();
+        const mySignKeyPair = sodium.crypto_sign_keypair();
 
-    const theirBoxPubKey = new Uint8Array(
-        await getTheirBoxPubKeyFunc(
-            Buffer.from(myBoxKeyPair.publicKey),
-            Buffer.from(mySignKeyPair.publicKey)
-        )
-    );
-    if(await _getSharedKeyClient(domain) == null) {
-        const { sharedKey } = await _genSharedKey(theirBoxPubKey, myBoxKeyPair);
+        const theirBoxPubKey = new Uint8Array(
+            await getTheirBoxPubKeyFunc(
+                Buffer.from(myBoxKeyPair.publicKey),
+                Buffer.from(mySignKeyPair.publicKey)
+            )
+        );
+        if(await _getSharedKeyClient(domain) == null) {
+            const { sharedKey } = await _genSharedKey(theirBoxPubKey, myBoxKeyPair);
 
-        await _setSharedKeyClient(domain, sharedKey);
-        await _setSigningKey(domain, mySignKeyPair.privateKey);
+            await _setSharedKeyClient(domain, sharedKey);
+            await _setSigningKey(domain, mySignKeyPair.privateKey);
+        }
     }
 };
 

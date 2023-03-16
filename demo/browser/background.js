@@ -33,7 +33,9 @@ function _readToken(headers) {
 
             const newToken = oatclient.decryptNextToken(domain);
 
-            insertHeader(details.requestHeaders,"OAT", newToken);
+            if (newToken != null){
+                insertHeader(details.requestHeaders,"OAT", newToken);
+            }
             return {requestHeaders: details.requestHeaders};
         },
         // filters

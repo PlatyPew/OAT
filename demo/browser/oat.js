@@ -80,9 +80,14 @@ const decryptNextToken = (domain) => {
     const { key } = _parseResponseToken(token);
 
     const apiKey = oatcrypto.decrypt(domain, key.encApiKey);
-    const sigApiKey = oatcrypto.sign(domain, { apiKey, domain });
 
-    return `${sigApiKey.toString("base64")}|${token.split("|")[1]}`;
+    if(apiKey != null) {
+        const sigApiKey = oatcrypto.sign(domain, { apiKey, domain });
+        return `${sigApiKey.toString("base64")}|${token.split("|")[1]}`;
+    }
+    else {
+        return null;
+    }
 };
 
 /**

@@ -81,13 +81,10 @@ const decryptNextToken = (domain) => {
 
     const apiKey = oatcrypto.decrypt(domain, key.encApiKey);
 
-    if(apiKey != null) {
-        const sigApiKey = oatcrypto.sign(domain, { apiKey, domain });
-        return `${sigApiKey.toString("base64")}|${token.split("|")[1]}`;
-    }
-    else {
-        return null;
-    }
+    if(apiKey === null) return null;
+
+    const sigApiKey = oatcrypto.sign(domain, { apiKey, domain });
+    return `${sigApiKey.toString("base64")}|${token.split("|")[1]}`;
 };
 
 /**
@@ -112,7 +109,6 @@ const initTokenClient = async (domain, initConn) => {
 module.exports = {
     client: {
         initToken: initTokenClient,
-        // rollToken: rollTokenClient,
         decryptNextToken: decryptNextToken,
         getSessionData: getSessionData,
         getToken: getToken,

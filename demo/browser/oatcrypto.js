@@ -1,4 +1,4 @@
-const sodium = require("libsodium-wrappers");
+const sodium = require("libsodium-wrappers");rollToken
 const browserCrypto = require("browserify-aes");
 const randomBytes = require('randombytes');
 const {sha3_256} = require('js-sha3');
@@ -18,24 +18,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 const setLocalStorage = (domain, name, value) => {
-    let clientObj = JSON.parse(localStorage.getItem(domain));
-    if (clientObj == null) {
-        // Init
+    let clientObj = JSON.parse(window.localStorage.getItem(domain));
+    if (clientObj === null) {
+        // Initialise key-pair
         let clientObj = {};
         clientObj[name] = value;
         window.localStorage.setItem(domain,JSON.stringify(clientObj));
+        return;
     }
-    else {
-        clientObj[name] = value;
-        window.localStorage.setItem(domain,JSON.stringify(clientObj));
-    }
+    // Store new value
+    clientObj[name] = value;
+    window.localStorage.setItem(domain,JSON.stringify(clientObj));
 }
 
 const getLocalStorage = (domain, name) => {
     let value = null;
     try {
         let domainObj = JSON.parse(window.localStorage.getItem(domain));
-        if (domainObj[name] != null) {
+        if (domainObj[name] !== null) {
             value = domainObj[name];
         }
         return value;
@@ -49,12 +49,11 @@ const getLocalStorage = (domain, name) => {
 /**
  * signs api key with client private key
  *
- * @async
  * @param {string} domain - domain
  * @param {Object} data - api key and domain to sign
  *     @param {Buffer} data.apiKey - the api key to sign
  *     @param {string} data.apiKey - the api key to sign
- * @returns {Promise<Buffer>} signature and data
+ * @returns {Buffer} signature and data
  */
 const sign = (domainName, { apiKey, domain }) => {
     const privKey = _getSigningKey(domainName);
@@ -75,7 +74,7 @@ const sign = (domainName, { apiKey, domain }) => {
 const _getSigningKey = (domain) => {
     const signingKey = getLocalStorage(domain,"signingKey");
 
-    if(signingKey == null) return null;
+    if(signingKey === null) return null;
 
     let signingKeyArr = JSON.parse(signingKey);
     signingKeyArr = new Uint8Array(signingKeyArr);
@@ -113,7 +112,7 @@ const _setSigningKey = async (domain, signingKey) => {
 const decrypt = (domain, encApiKey) => {
     const sharedKey =  _getSharedKeyClient(domain);
 
-    if (sharedKey != null) {
+    if (sharedKey !== null) {
         const iv = encApiKey.slice(0, 12);
         const enc = encApiKey.slice(12);
 
@@ -168,7 +167,7 @@ const _decryptKey = (encKey) => {
 const _getSharedKeyClient = (domain) => {
     const encSharedKey = getLocalStorage(domain,"sharedKey");
 
-    if(encSharedKey == null) return null;
+    if(encSharedKey === null) return null;
 
     let encSharedKeyArr = JSON.parse(encSharedKey);
     encSharedKeyArr = new Uint8Array(encSharedKeyArr);
@@ -229,7 +228,7 @@ const initClientKeys = async (domain, getTheirBoxPubKeyFunc) => {
                 Buffer.from(mySignKeyPair.publicKey)
             )
         );
-        if(await _getSharedKeyClient(domain) == null) {
+        if(await _getSharedKeyClient(domain) === null) {
             const { sharedKey } = await _genSharedKey(theirBoxPubKey, myBoxKeyPair);
 
             await _setSharedKeyClient(domain, sharedKey);

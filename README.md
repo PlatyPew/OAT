@@ -1,7 +1,7 @@
 <p align="center">
     <br />
     <img src="./logo.png" alt="oat" style="width: 20%; height: auto;"/>
-    <h1 align="center">An Unstealable Access Token That Handles Authentication For APIs & Sessions</h1>
+    <h1 align="center">An Unstealable Access Token That Authenticates APIs & Sessions</h1>
 </p>
 
 <p align="center">
@@ -183,13 +183,13 @@ This function is used to delete the session keys on the client. It takes in one 
 
 <br />
 
-`oat.server.initToken(initialisationToken, newFields)`
+`oat.server.initToken(initialisationToken, fields)`
 
 -   `initialisationToken` \<string\>
--   `newFields` \<Object\>
+-   `fields` \<Object\>
 -   Returns: \<string\>
 
-This function is used to initialise the session keys on the server and return the response token. It takes in two parameters: the `initialisationToken` from the client and a JSON object `newFields` to use in the token.
+This function is used to initialise the session keys on the server and return the response token. It takes in two parameters: the `initialisationToken` from the client and a JSON object `fields` to use in the token.
 
 <br />
 
@@ -203,13 +203,13 @@ This function is used to authenticate the request token from the client. It take
 
 <br />
 
-`oat.server.rollToken(token, newFields)`
+`oat.server.rollToken(token, fields)`
 
 -   `token` \<string\>
--   `newFields` \<Object\>
+-   `fields` \<Object\>
 -   Returns: \<string\>
 
-this function is used to roll and provide the response token from the server, It takes two parameters: `token` which is is the request token, and `newFields` which is the JSON data to insert into the response token
+this function is used to roll and provide the response token from the server, It takes two parameters: `token` which is is the request token, and `fields` which is the JSON data to insert into the response token
 
 <br />
 
@@ -222,13 +222,13 @@ This function is used to get the session data from the token. It takes in one pa
 
 <br />
 
-`oat.server.setSessionData(token, newFields)`
+`oat.server.setSessionData(token, fields)`
 
 -   `token` \<string\>
--   `newFields` \<Object\>
+-   `fields` \<Object\>
 -   Returns: \<string\>
 
-This function is used to insert session data into the response token. It takes two parameters: `token` which is the response token and `newFields` which is JSON data to be updated.
+This function is used to insert session data into the response token. It takes two parameters: `token` which is the response token and `fields` which is JSON data to be updated.
 
 <br />
 
@@ -237,7 +237,51 @@ This function is used to insert session data into the response token. It takes t
 -   `clientId` \<string\>
 -   Returns: \<boolean\>
 
-This function is used to delete the session keys on the server. It takes in one parameter: the `domain` of the session and returns if the token has been successfully removed.
+This function is used to delete the session keys on the server. It takes in one parameter: the `clientId` of the session and returns if the token has been successfully removed.
+
+### Package `@platypew/oatoken-express`
+
+`oat.init(initialField)(req, res, next)`
+
+-   `initialField` \<Object\>
+
+This function handles the initialising `/oat` path for key exchange
+
+<br />
+
+`oat.initpath(req, res, next)`
+
+This function should be called after performing a successful authentication. Creates the header `OATINIT` which provides the path for initialising the key exchange process.
+
+<br />
+
+`oat.deinit(req, res, next)`
+
+This function is called to delete the session from the database.
+
+<br />
+
+`oat.roll(req, res, next)`
+
+This function performs authentication and rolls the token for the client.
+
+<br />
+
+`oat.getsession(res)`
+
+-   `res` \<Response\>
+-   Returns: \<Object\>
+
+This function takes in `res` gets the session data from the token and returns it in JSON format.
+
+<br />
+
+`oat.setsession(res, fields)`
+
+-   `res` \<Response\>
+-   `fields` \<Object\>
+
+This function takes in `res` and updates the field for the current response token.
 
 ## Contributors
 

@@ -1,4 +1,4 @@
-const sodium = require("libsodium-wrappers");rollToken
+const sodium = require("libsodium-wrappers");
 const browserCrypto = require("browserify-aes");
 const randomBytes = require('randombytes');
 const {sha3_256} = require('js-sha3');
@@ -49,7 +49,7 @@ const getLocalStorage = (domain, name) => {
     let value = null;
     try {
         let domainObj = JSON.parse(window.localStorage.getItem(domain));
-        if (domainObj[name] !== null) {
+        if (domainObj[name] != null) {
             value = domainObj[name];
         }
         return value;

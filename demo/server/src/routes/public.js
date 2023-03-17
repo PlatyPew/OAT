@@ -18,6 +18,10 @@ router.get("/login", (_, res) => {
     res.sendFile(path.join(__dirname, "../public/login.html"));
 });
 
+router.get("/dashboard", (_, res) => {
+    res.sendFile(path.join(__dirname, "../public/dashboard.html"));
+})
+
 router.get("/logout", oat.deinit, (_, res) => {
     res.redirect("/");
 });
@@ -28,3 +32,4 @@ router.get("*", (_, res) => {
 
 // Export the router
 module.exports = router;
+

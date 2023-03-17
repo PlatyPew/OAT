@@ -25,9 +25,11 @@ function _readToken(headers) {
             return { token: headers[i].value, init: false };
         } else if (headers[i].name.toLowerCase() === "oatinit") {
             return { token: headers[i].value, init: true };
+        }else if (headers[i].name.toLowerCase() === "oatdeinit") {
+            return { token: headers[i].value, deinit: true };
         }
     }
-    return { token: undefined, init: undefined };
+    return { token: undefined, init: undefined, deinit: undefined };
 }
 
 (async () => {
@@ -36,7 +38,6 @@ function _readToken(headers) {
     // HTTP Request before sending
     chrome.webRequest.onBeforeSendHeaders.addListener(
         (details) => {
-            // check if domain exist in localStorage
             let domain = new URL(details.url).hostname;
 
             const token = oatclient.getToken(domain);
@@ -59,17 +60,25 @@ function _readToken(headers) {
     // HTTP Response recevied
     chrome.webRequest.onHeadersReceived.addListener(
         (details) => {
-            // check if domain exist in localStorage
             const domain = new URL(details.url).hostname;
 
-            const { token, init } = _readToken(details.responseHeaders);
+            const { token, init, deinit } = _readToken(details.responseHeaders);
 
             if (token === undefined) return;
 
+            // Removing session / Logout
+            if (deinit) {
+                window.localStorage.removeItem(domain);
+                return { responseHeaders: details.responseHeaders };
+            }
+
+            // Rolling token storage
             if (!init) {
                 oatclient.setToken(domain, token);
                 return { responseHeaders: details.responseHeaders };
             }
+
+            // Initialisation / Login
             window.localStorage.removeItem(domain);
 
             const protocol = new URL(details.url).protocol;

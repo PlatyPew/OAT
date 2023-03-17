@@ -1,0 +1,21 @@
+{
+  "manifest_version": 2,
+  "name": "OAT",
+  "description": "OAT Handler",
+  "version": "1.0.0",
+  "browser_action": {
+    "default_popup": "popup/index.html"
+  },
+  "permissions": [
+    "activeTab",
+    "webRequest",
+    "webRequestBlocking",
+    "https://*/*",
+    "http://*/*"
+  ],
+  "content_security_policy": "default-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://*",
+  "background": {
+    "scripts": ["build/bundle.js"],
+    "persistent": true
+  }
+}

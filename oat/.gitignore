@@ -131,3 +131,6 @@ dist
 
 # Keys
 *.pem
+
+# Browserify build
+build/

@@ -1,12 +1,12 @@
 const sodium = require("libsodium-wrappers");
 const browserCrypto = require("browserify-aes");
-const randomBytes = require('randombytes');
-const {sha3_256} = require('js-sha3');
+const randomBytes = require("randombytes");
+const { sha3_256 } = require("js-sha3");
 let OAT_PASS = "";
 
 const _fromHexString = (hexString) => {
     return Uint8Array.from(hexString.match(/.{1,2}/g).map((byte) => parseInt(byte, 16)));
-  }
+};
 
 /**
  * creates necessary directories for key storage and initialise OAT_PASS
@@ -19,7 +19,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 /**
  * store key-value pair into window.localStorage
- * 
+ *
  * @param {string} domain - domain name for stored values
  * @param {string} name - key
  * @param {string} value - value
@@ -30,17 +30,17 @@ const setLocalStorage = (domain, name, value) => {
         // Initialise key-pair
         let clientObj = {};
         clientObj[name] = value;
-        window.localStorage.setItem(domain,JSON.stringify(clientObj));
+        window.localStorage.setItem(domain, JSON.stringify(clientObj));
         return;
     }
     // Store new value
     clientObj[name] = value;
-    window.localStorage.setItem(domain,JSON.stringify(clientObj));
-}
+    window.localStorage.setItem(domain, JSON.stringify(clientObj));
+};
 
 /**
  * retrieve value from key name in object with domain name in window.localStorage
- * 
+ *
  * @param {string} domain - domain name for stored values window.localStorage
  * @param {string} name - key
  * @returns {string} value from key
@@ -53,12 +53,11 @@ const getLocalStorage = (domain, name) => {
             value = domainObj[name];
         }
         return value;
-    }
-    catch {}
-    finally {
+    } catch {
+    } finally {
         return value;
     }
-}
+};
 
 /**
  * signs api key with client private key
@@ -85,9 +84,9 @@ const sign = (domainName, { apiKey, domain }) => {
  * @returns {Uint8Array} signing key
  */
 const _getSigningKey = (domain) => {
-    const signingKey = getLocalStorage(domain,"signingKey");
+    const signingKey = getLocalStorage(domain, "signingKey");
 
-    if(signingKey === null) return null;
+    if (signingKey === null) return null;
 
     let signingKeyArr = JSON.parse(signingKey);
     signingKeyArr = new Uint8Array(signingKeyArr);
@@ -106,8 +105,8 @@ const _setSigningKey = async (domain, signingKey) => {
     let encSigningKey = _encryptKey(signingKey);
 
     let signingKeyArr = Array.from // if available
-    ? Array.from(encSigningKey) // use Array#from
-    : [].map.call(encSigningKey, (v => v)); // otherwise map()
+        ? Array.from(encSigningKey) // use Array#from
+        : [].map.call(encSigningKey, (v) => v); // otherwise map()
 
     signingKeyArr = JSON.stringify(signingKeyArr);
 
@@ -122,7 +121,7 @@ const _setSigningKey = async (domain, signingKey) => {
  * @returns {Buffer} decrypted api key
  */
 const decrypt = (domain, encApiKey) => {
-    const sharedKey =  _getSharedKeyClient(domain);
+    const sharedKey = _getSharedKeyClient(domain);
 
     if (sharedKey !== null) {
         const iv = encApiKey.slice(0, 12);
@@ -132,11 +131,9 @@ const decrypt = (domain, encApiKey) => {
         let dec = decipher.update(enc);
 
         return dec;
-    }
-    else {
+    } else {
         return null;
     }
-    
 };
 
 /**
@@ -146,7 +143,7 @@ const decrypt = (domain, encApiKey) => {
  * @returns {Buffer} encrypted key
  */
 const _encryptKey = (decKey) => {
-    const iv =  new Uint8Array(randomBytes(12));
+    const iv = new Uint8Array(randomBytes(12));
     const cipher = browserCrypto.createCipheriv("aes-256-gcm", OAT_PASS, iv);
     let enc = cipher.update(decKey);
     cipher.final();
@@ -176,9 +173,9 @@ const _decryptKey = (encKey) => {
  * @returns {Uint8Array} shared key
  */
 const _getSharedKeyClient = (domain) => {
-    const encSharedKey = getLocalStorage(domain,"sharedKey");
+    const encSharedKey = getLocalStorage(domain, "sharedKey");
 
-    if(encSharedKey === null) return null;
+    if (encSharedKey === null) return null;
 
     let encSharedKeyArr = JSON.parse(encSharedKey);
     encSharedKeyArr = new Uint8Array(encSharedKeyArr);
@@ -197,12 +194,12 @@ const _setSharedKeyClient = async (domain, sharedKey) => {
     let encSharedKey = _encryptKey(sharedKey);
 
     let sharedKeyArr = Array.from // if available
-    ? Array.from(encSharedKey) // use Array#from
-    : [].map.call(encSharedKey, (v => v)); // otherwise map()
+        ? Array.from(encSharedKey) // use Array#from
+        : [].map.call(encSharedKey, (v) => v); // otherwise map()
 
     sharedKeyArr = JSON.stringify(sharedKeyArr);
 
-    setLocalStorage(domain,"sharedKey", sharedKeyArr);
+    setLocalStorage(domain, "sharedKey", sharedKeyArr);
 };
 
 /**
@@ -229,7 +226,7 @@ const _genSharedKey = async (theirPubKey, myKeyPair) => {
  * @param {function} getTheirBoxPubKeyFunc - anon function to get server box public key
  */
 const initClientKeys = async (domain, getTheirBoxPubKeyFunc) => {
-    if (OAT_PASS !== ""){
+    if (OAT_PASS !== "") {
         const myBoxKeyPair = sodium.crypto_box_keypair();
         const mySignKeyPair = sodium.crypto_sign_keypair();
 
@@ -239,7 +236,7 @@ const initClientKeys = async (domain, getTheirBoxPubKeyFunc) => {
                 Buffer.from(mySignKeyPair.publicKey)
             )
         );
-        if(await _getSharedKeyClient(domain) === null) {
+        if ((await _getSharedKeyClient(domain)) === null) {
             const { sharedKey } = await _genSharedKey(theirBoxPubKey, myBoxKeyPair);
 
             await _setSharedKeyClient(domain, sharedKey);

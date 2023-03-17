@@ -81,7 +81,7 @@ const decryptNextToken = (domain) => {
 
     const apiKey = oatcrypto.decrypt(domain, key.encApiKey);
 
-    if(apiKey === null) return null;
+    if (apiKey === null) return null;
 
     const sigApiKey = oatcrypto.sign(domain, { apiKey, domain });
     return `${sigApiKey.toString("base64")}|${token.split("|")[1]}`;
@@ -95,9 +95,9 @@ const decryptNextToken = (domain) => {
  */
 const initTokenClient = async (domain, initConn) => {
     await oatcrypto.initClientKeys(domain, async (ourBoxPubKey, ourSignPubKey) => {
-        const token = (await initConn(
+        const token = await initConn(
             Buffer.concat([ourBoxPubKey, ourSignPubKey]).toString("base64")
-        ));
+        );
         const { key } = _parseResponseToken(token);
 
         setToken(domain, token);
@@ -112,6 +112,6 @@ module.exports = {
         decryptNextToken: decryptNextToken,
         getSessionData: getSessionData,
         getToken: getToken,
-        setToken: setToken
-    }
+        setToken: setToken,
+    },
 };

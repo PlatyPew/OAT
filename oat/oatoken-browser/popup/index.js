@@ -9,4 +9,11 @@ document.addEventListener("DOMContentLoaded", function () {
         // Indicate success
         document.getElementById("message").innerHTML = "Password captured!";
     });
+    var clearKeysButton = document.getElementById("clear-keys");
+    clearKeysButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        window.localStorage.clear();
+        // Indicate success
+        document.getElementById("message").innerHTML = "All session keys cleared!";
+    });
 });

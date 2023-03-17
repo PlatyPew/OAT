@@ -70,9 +70,9 @@ function _readToken(headers) {
                 oatclient.setToken(domain, token);
                 return { responseHeaders: details.responseHeaders };
             }
+            window.localStorage.removeItem(domain);
 
             const protocol = new URL(details.url).protocol;
-            const pathname = new URL(details.url).pathname;
 
             const url = `${protocol}//${domain}${token}`;
 

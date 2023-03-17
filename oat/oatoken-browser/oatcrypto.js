@@ -236,12 +236,10 @@ const initClientKeys = async (domain, getTheirBoxPubKeyFunc) => {
                 Buffer.from(mySignKeyPair.publicKey)
             )
         );
-        if ((await _getSharedKeyClient(domain)) === null) {
-            const { sharedKey } = await _genSharedKey(theirBoxPubKey, myBoxKeyPair);
+        const { sharedKey } = await _genSharedKey(theirBoxPubKey, myBoxKeyPair);
 
-            await _setSharedKeyClient(domain, sharedKey);
-            await _setSigningKey(domain, mySignKeyPair.privateKey);
-        }
+        await _setSharedKeyClient(domain, sharedKey);
+        await _setSigningKey(domain, mySignKeyPair.privateKey);
     }
 };
 

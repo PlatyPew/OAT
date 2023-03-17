@@ -20,9 +20,13 @@ router.post(
     },
     oat.initpath,
     (_, res) => {
-        return res.redirect("/");
+        return res.redirect("/dashboard");
     }
 );
+
+router.post("/logout", oat.deinit, async (_, res) => {
+    return res.redirect("/");
+});
 
 // Export the router
 module.exports = router;

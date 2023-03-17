@@ -15,7 +15,7 @@
   ],
   "content_security_policy": "default-src 'self' 'wasm-unsafe-eval'; connect-src 'self' https://*",
   "background": {
-    "scripts": ["bundle.js"],
+    "scripts": ["build/bundle.js"],
     "persistent": true
   }
 }

@@ -1,10 +1,10 @@
 {
   "name": "@platypew/oatoken-browser",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Browser extension for oatoken",
   "main": "background.js",
   "scripts": {
-    "build": "browserify background.js -o bundle.js"
+    "build": "browserify background.js -o build/bundle.js"
   },
   "author": "S0meDev99",
   "license": "LGPL-3.0-or-later",

@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  restapi:
+    build: .
+    container_name: restapi
+    environment:
+      - OAT_PASS=${OAT_PASS}
+      - DOMAIN=${DOMAIN}
+    restart: always
+    networks:
+      - db
+    ports:
+      - "443:3000"
+    volumes:
+      - "./cert.pem:/opt/market/cert.pem:ro"
+      - "./key.pem:/opt/market/key.pem:ro"
+      - "./chain.pem:/opt/market/chain.pem:ro"
+    depends_on:
+      - database
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+      restart_policy:
+          condition: always
+          delay: 3s
+
+
+  database:
+    image: mongo
+    container_name: database
+    restart: always
+    networks:
+      - db
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+      restart_policy:
+          condition: always
+          delay: 3s
+
+networks:
+  db:
+    name: oat_db_local

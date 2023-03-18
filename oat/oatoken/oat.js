@@ -343,13 +343,23 @@ const initTokenServer = async (initialisationToken, newFields) => {
  *
  * @async
  * @param {string} domain - domain of keys
+ * @param {Function} initConn - function that returns challenge response
+ *      @param {string} challenge - challenge string
  * @returns {Promise<boolean>} success
  */
-const deinitTokenClient = async (domain) => {
+const deinitTokenClient = async (domain, initConn) => {
     if (!domain) return false;
     if (domain.includes("../")) return false;
 
     try {
+        const challenge = crypto.randomBytes(32);
+        const challengeResponse = Buffer.from(
+            await initConn(challenge.toString("base64")),
+            "base64"
+        );
+
+        if (Buffer.compare(challenge, challengeResponse) !== 0) return false;
+
         await fs.promises.rm(`${oatcrypto.KEY_STORE}/${domain}`, { recursive: true });
     } catch {
         return false;
@@ -359,25 +369,33 @@ const deinitTokenClient = async (domain) => {
 };
 
 /**
- * deletes keys for that client id
+ * deletes keys for that client id and sends challenge response
  *
  * @async
- * @param {string} clientId - client id
- * @returns {Promise<boolean>} success
+ * @param {string} token - request token
+ * @param {string} challenge - base64 encoded challenge
+ * @returns {Promise<string>} challenge response
  */
-const deinitTokenServer = async (clientId) => {
-    if (!clientId) return false;
-    if (clientId.includes("../")) return false;
+const deinitTokenServer = async (token, challenge) => {
+    if (!token) return false;
+    if (token.includes("../")) return false;
+
+    const clientId = Buffer.from(requestToken.split("|")[1], "base64")
+        .slice(32, 52)
+        .toString("hex")
+        .toUpperCase();
+
+    const challengeResponse = await oatcrypto.encrypt(clientId, Buffer.from(challenge, "base64"));
 
     oatcrypto.deleteKeyCache(clientId);
 
     try {
         await fs.promises.rm(`${oatcrypto.KEY_STORE}/${clientId}`, { recursive: true });
     } catch {
-        return false;
+        return null;
     }
 
-    return true;
+    return challengeResponse.toString("base64");
 };
 
 module.exports = {

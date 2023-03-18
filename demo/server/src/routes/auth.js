@@ -24,7 +24,7 @@ router.post(
     }
 );
 
-router.post("/logout", oat.deinit, async (_, res) => {
+router.post("/logout", oat.deinitpath, async (_, res) => {
     return res.redirect("/");
 });
 

@@ -1,12 +1,22 @@
 const oat = require("@platypew/oatoken").client;
-const axios = require("axios");
 const fs = require("fs");
 const readline = require("readline").createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-const API_URL = "https://www.charming-brahmagupta.cloud";
+const axios = (() => {
+    if (process.env.PROXY !== "1") return require("axios");
+
+    const HttpsProxyAgent = require("https-proxy-agent");
+    const httpsAgent = new HttpsProxyAgent({ host: "127.0.0.1", port: 8080 });
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
+    return require("axios").create({ httpsAgent });
+})();
+
+/* const API_URL = "https://www.charming-brahmagupta.cloud"; */
+const API_URL = "https://localhost:3000";
 
 const keyExchange = async () => {
     const domain = new URL(API_URL).hostname;
@@ -40,6 +50,41 @@ const keyExchange = async () => {
             });
 
             return response.headers.oat;
+        });
+    } catch (err) {
+        console.error(err);
+    }
+};
+
+const killSession = async () => {
+    const domain = new URL(API_URL).hostname;
+    try {
+        await fs.promises.access(
+            `${process.env.HOME}/.oatkeys/${domain}`,
+            fs.constants.F_OK | fs.constants.R_OK
+        );
+    } catch {
+        return;
+    }
+
+    try {
+        let deinitpath;
+        await oat.rollToken(domain, async (requestToken) => {
+            const response = await axios.post(`${API_URL}/api/auth/logout`, null, {
+                headers: { OAT: requestToken },
+                maxRedirects: 0,
+                validateStatus: (status) => {
+                    return status >= 200 && status <= 302;
+                },
+            });
+            deinitpath = response.headers.oatdeinit;
+            return response.headers.oat;
+        });
+
+        await oat.deinitToken(domain, async (challenge) => {
+            await oat.rollToken(domain, async (requestToken) => {
+
+            });
         });
     } catch (err) {
         console.error(err);
@@ -98,12 +143,12 @@ const setCartInventory = async (fields) => {
 };
 
 const buyItems = async () => {
-    const data = await _postRequest("/api/market/store/buy", {});
+    const data = await _postRequest("/api/market/store/buy", null);
     return data.response;
 };
 
 const restockStoreInventory = async () => {
-    const data = await _postRequest("/api/market/store/restock", {});
+    const data = await _postRequest("/api/market/store/restock", null);
     return data.response;
 };
 
@@ -119,6 +164,8 @@ const prompt = (question) => {
     await require("libsodium-wrappers").ready;
 
     await keyExchange();
+
+    await killSession();
 
     while (true) {
         let option = await prompt(

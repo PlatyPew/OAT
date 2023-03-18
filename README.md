@@ -10,6 +10,7 @@
     <br /><br />
     <img src="https://img.shields.io/badge/license-LGPLv3-green" />
     <img src="https://img.shields.io/badge/node-%3E%3D19.8.0-brightgreen" />
+    <img src="https://img.shields.io/badge/Coded%20By%20Humans-100%25-brightgreen" /><br />
     <a href="https://www.npmjs.com/package/@platypew/oatoken"><img src="https://img.shields.io/npm/v/@platypew/oatoken?label=oatoken" /></a>
     <a href="https://www.npmjs.com/package/@platypew/oatoken-express"><img src="https://img.shields.io/npm/v/@platypew/oatoken-express?label=oatoken-express" /></a>
     <br /><br />
@@ -44,6 +45,13 @@ Server integration with ExpressJS with a higher-level wrapper around oatoken
 ```bash
 npm install @platypew/oatoken-express
 ```
+Build the bundle.js (cd oat/oat-browser)
+
+```bash
+npm run build
+```
+
+To use the extension, Chrome needs to be in developer mode and load unpacked (cd oat/oat-browser)
 
 ## Usage
 

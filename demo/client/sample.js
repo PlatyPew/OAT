@@ -1,10 +1,19 @@
 const oat = require("@platypew/oatoken").client;
-const axios = require("axios");
 const fs = require("fs");
 const readline = require("readline").createInterface({
     input: process.stdin,
     output: process.stdout,
 });
+
+const axios = (() => {
+    if (process.env.PROXY !== "1") return require("axios");
+
+    const HttpsProxyAgent = require("https-proxy-agent");
+    const httpsAgent = new HttpsProxyAgent({ host: "127.0.0.1", port: 8080 });
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
+    return require("axios").create({ httpsAgent });
+})();
 
 const API_URL = "https://www.charming-brahmagupta.cloud";
 

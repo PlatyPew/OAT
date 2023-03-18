@@ -2,7 +2,9 @@
   "dependencies": {
     "@platypew/oatoken": "^1.0.5",
     "axios": "^1.3.4",
-    "https-proxy-agent": "^5.0.1",
     "libsodium-wrappers": "^0.7.11"
+  },
+  "devDependencies": {
+    "https-proxy-agent": "^5.0.1"
   }
 }

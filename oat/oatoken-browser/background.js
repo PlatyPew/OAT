@@ -108,4 +108,4 @@ function _readToken(headers) {
     );
 })();
 
-console.log("end");
+console.log("Extension Loaded");

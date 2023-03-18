@@ -1,6 +1,6 @@
 {
   "name": "@platypew/oatoken-browser",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Browser extension for oatoken",
   "main": "background.js",
   "scripts": {
@@ -11,8 +11,8 @@
   "dependencies": {
     "browser-crypto": "^2.0.0",
     "browserify-aes": "^1.2.0",
-    "js-sha3": "^0.8.0",
     "libsodium-wrappers": "^0.7.11",
+    "pbkdf2": "^3.1.2",
     "randombytes": "^2.1.0"
   },
   "devDependencies": {

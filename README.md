@@ -45,6 +45,7 @@ Server integration with ExpressJS with a higher-level wrapper around oatoken
 ```bash
 npm install @platypew/oatoken-express
 ```
+
 Build the bundle.js (cd oat/oat-browser)
 
 ```bash
@@ -238,6 +239,15 @@ This function is used to get the session data from the token. It takes in one pa
 -   Returns: \<string\>
 
 This function is used to insert session data into the response token. It takes two parameters: `token` which is the response token and `fields` which is JSON data to be updated.
+
+<br />
+
+`oat.server.generateChallenge(token, challenge)`
+
+-   `token` \<string\>
+-   `challenge` \<string\>
+
+This function is used to generate a challenge for the token. It takes in two parameters: `token` which is the request token and `challenge` which is the oat deinit path.
 
 <br />
 

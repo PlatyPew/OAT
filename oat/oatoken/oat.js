@@ -391,6 +391,13 @@ const generateChallenge = async (token, challenge) => {
     };
 };
 
+/**
+ * deinitialise token on the server
+ *
+ * @async
+ * @param {string} clientId - client id
+ * @returns {Promise<boolean>} return if token has been deleted
+ */
 const deinitTokenServer = async (clientId) => {
     if (!clientId) return false;
     if (clientId.includes("../")) return false;

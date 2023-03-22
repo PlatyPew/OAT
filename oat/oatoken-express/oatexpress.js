@@ -52,13 +52,14 @@ const deinitpath = async (req, res, next) => {
     const rng = crypto.randomBytes(8).toString("hex");
     const pathToOat = `${DEINIT_DIR}/${rng}`;
 
-    fs.writeFile(pathToOat, "", () => {
+    const { clientId, challenge } = await oat.generateChallenge(requestToken, `/oat/${rng}`);
+    res.setHeader("OATDEINIT", challenge);
+
+    fs.writeFile(pathToOat, clientId, () => {
         setTimeout(() => {
             fs.unlink(pathToOat, (_) => {});
         }, 15000);
     });
-
-    res.setHeader("OATDEINIT", `/oat/${rng}`);
 
     next();
 };
@@ -111,26 +112,14 @@ const deinit = () => async (req, res, next) => {
     // Check if file exists in tmp directory
     try {
         await fs.promises.access(`${DEINIT_DIR}/${basename}`);
-    } catch {
-        return next();
-    }
 
-    const challenge = req.get("OATDEINIT");
-    if (!challenge) return next();
-
-    try {
+        const clientId = (await fs.promises.readFile(`${DEINIT_DIR}/${basename}`)).toString();
         await fs.promises.unlink(`${DEINIT_DIR}/${basename}`);
-
-        if (!(await oat.authToken(DOMAIN, requestToken))) return next();
-
-        const challengeResponse = await oat.deinitToken(requestToken, challenge);
-
-        res.setHeader("OATDEINIT", challengeResponse);
+        await oat.deinitToken(clientId);
+        return res.status(200).send();
     } catch {
-        return res.status(400).json({ response: "Invalid Token" });
+        return res.status(500).send();
     }
-
-    next();
 };
 
 /**

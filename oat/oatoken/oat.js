@@ -343,23 +343,21 @@ const initTokenServer = async (initialisationToken, newFields) => {
  *
  * @async
  * @param {string} domain - domain of keys
- * @param {Function} initConn - function that returns challenge response
- *      @param {string} challenge - challenge string
+ * @param {string} encdeinitpath - encrypted deinit path
+ * @param {Function} initConn - create connection
+ *     @param {string} deinitpath - path to deinit
  * @returns {Promise<boolean>} success
  */
-const deinitTokenClient = async (domain, initConn) => {
+const deinitTokenClient = async (domain, encdeinitpath, initConn) => {
     if (!domain) return false;
     if (domain.includes("../")) return false;
 
+    const deinitpath = await oatcrypto.decrypt(domain, Buffer.from(encdeinitpath, "base64"));
+
+    // If status code comes true
+    if (!(await initConn(Buffer.from(deinitpath, "base64").toString()))) return false;
+
     try {
-        const challenge = crypto.randomBytes(32);
-        const challengeResponse = Buffer.from(
-            await initConn(challenge.toString("base64")),
-            "base64"
-        );
-
-        if (Buffer.compare(challenge, challengeResponse) !== 0) return false;
-
         await fs.promises.rm(`${oatcrypto.KEY_STORE}/${domain}`, { recursive: true });
     } catch {
         return false;
@@ -369,33 +367,42 @@ const deinitTokenClient = async (domain, initConn) => {
 };
 
 /**
- * deletes keys for that client id and sends challenge response
+ * sends challenge response based on client id
  *
  * @async
  * @param {string} token - request token
- * @param {string} challenge - base64 encoded challenge
+ * @param {string} challenge - random path
  * @returns {Promise<string>} challenge response
  */
-const deinitTokenServer = async (token, challenge) => {
+const generateChallenge = async (token, challenge) => {
     if (!token) return false;
     if (token.includes("../")) return false;
 
-    const clientId = Buffer.from(requestToken.split("|")[1], "base64")
+    const clientId = Buffer.from(token.split("|")[1], "base64")
         .slice(32, 52)
         .toString("hex")
         .toUpperCase();
 
-    const challengeResponse = await oatcrypto.encrypt(clientId, Buffer.from(challenge, "base64"));
+    challenge = await oatcrypto.encrypt(clientId, challenge);
+
+    return {
+        clientId,
+        challenge: challenge.toString("base64"),
+    };
+};
+
+const deinitTokenServer = async (clientId) => {
+    if (!clientId) return false;
+    if (clientId.includes("../")) return false;
 
     oatcrypto.deleteKeyCache(clientId);
 
     try {
         await fs.promises.rm(`${oatcrypto.KEY_STORE}/${clientId}`, { recursive: true });
     } catch {
-        return null;
+        return false;
     }
-
-    return challengeResponse.toString("base64");
+    return true;
 };
 
 module.exports = {
@@ -411,6 +418,7 @@ module.exports = {
         rollToken: rollTokenServer,
         getSessionData: getSessionData,
         setSessionData: setSessionData,
+        generateChallenge: generateChallenge,
         deinitToken: deinitTokenServer,
     },
 };

@@ -108,6 +108,7 @@ const app = express();
 const oat = require("@platypew/oatoken-express");
 
 app.use(oat.init());
+app.use(oat.deinit());
 
 app.get("/api/login");
 
@@ -266,6 +267,11 @@ This function should be called after performing a successful authentication. Cre
 `oat.deinit(req, res, next)`
 
 This function is called to delete the session from the database.
+<br />
+
+`oat.deinitpath(req, res, next)`
+
+This function should be called after performing a successful authentication. Creates the header `OATDEINIT` which provides the path for de-initialising the tokens
 
 <br />
 

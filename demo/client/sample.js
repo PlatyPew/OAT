@@ -15,8 +15,7 @@ const axios = (() => {
     return require("axios").create({ httpsAgent });
 })();
 
-/* const API_URL = "https://www.charming-brahmagupta.cloud"; */
-const API_URL = "https://localhost:3000";
+const API_URL = "https://www.charming-brahmagupta.cloud";
 
 const keyExchange = async () => {
     const domain = new URL(API_URL).hostname;
@@ -68,7 +67,7 @@ const killSession = async () => {
     }
 
     try {
-        let deinitpath;
+        let encdeinitpath;
         await oat.rollToken(domain, async (requestToken) => {
             const response = await axios.post(`${API_URL}/api/auth/logout`, null, {
                 headers: { OAT: requestToken },
@@ -77,14 +76,13 @@ const killSession = async () => {
                     return status >= 200 && status <= 302;
                 },
             });
-            deinitpath = response.headers.oatdeinit;
+            encdeinitpath = response.headers.oatdeinit;
             return response.headers.oat;
         });
 
-        await oat.deinitToken(domain, async (challenge) => {
-            await oat.rollToken(domain, async (requestToken) => {
-
-            });
+        await oat.deinitToken(domain, encdeinitpath, async (deinitpath) => {
+            const response = await axios.get(`${API_URL}${deinitpath}`);
+            return response.status === 200;
         });
     } catch (err) {
         console.error(err);
@@ -165,8 +163,6 @@ const prompt = (question) => {
 
     await keyExchange();
 
-    await killSession();
-
     while (true) {
         let option = await prompt(
             `Welcome to the OAT store! What would you like to do?
@@ -175,13 +171,14 @@ const prompt = (question) => {
 3. Add items to your cart
 4. Buy items in your cart
 5. Restock store items
+6. Kill Session
 0. Exit
 
 > `
         );
 
         option = parseInt(option);
-        if (isNaN(option) || option < 1 || option > 5) {
+        if (isNaN(option) || option < 1 || option > 6) {
             readline.close();
             break;
         }
@@ -196,6 +193,12 @@ const prompt = (question) => {
 
         let items = {};
         if (option === 3) items = JSON.parse(await prompt("Enter JSON string here:\n> "));
+
+        if (option === 6) {
+            await killSession();
+            readline.close();
+            break;
+        }
 
         console.log(await funcs[option - 1](items));
     }

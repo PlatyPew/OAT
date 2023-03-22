@@ -68,6 +68,7 @@ app.use(bodyParser.urlencoded({ extended: true, limit: "8mb" }));
 app.use(bodyParser.json({ limit: "8mb" }));
 
 app.use(oat.init({ cart: {} }));
+app.use(oat.deinit());
 
 const auth = require("./src/routes/auth");
 app.use("/api/auth", auth);

@@ -1,6 +1,6 @@
 {
   "name": "@platypew/oatoken-browser",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Browser extension for oatoken",
   "main": "background.js",
   "scripts": {

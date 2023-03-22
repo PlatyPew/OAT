@@ -1,5 +1,7 @@
 //browserify background.js -o bundle.js
 
+const oatcrypto = require("./oatcrypto");
+
 const oatclient = require("./oat").client;
 
 /**
@@ -25,11 +27,9 @@ function _readToken(headers) {
             return { token: headers[i].value, init: false };
         } else if (headers[i].name.toLowerCase() === "oatinit") {
             return { token: headers[i].value, init: true };
-        }else if (headers[i].name.toLowerCase() === "oatdeinit") {
-            return { token: headers[i].value, deinit: true };
         }
     }
-    return { token: undefined, init: undefined, deinit: undefined };
+    return { token: undefined, init: undefined };
 }
 
 (async () => {
@@ -62,14 +62,26 @@ function _readToken(headers) {
         (details) => {
             const domain = new URL(details.url).hostname;
 
-            const { token, init, deinit } = _readToken(details.responseHeaders);
+            const { token, init } = _readToken(details.responseHeaders);
 
             if (token === undefined) return;
 
             // Removing session / Logout
-            if (deinit) {
-                window.localStorage.removeItem(domain);
-                return { responseHeaders: details.responseHeaders };
+            if (new URL(details.url).pathname === "/api/auth/logout"){
+                for (let i = 0; i < details.responseHeaders.length; i++) {
+                    if (details.responseHeaders[i].name.toLowerCase() === "oatdeinit") {
+                        const b64DecodedToken = Buffer.from(details.responseHeaders[i].value, "base64");
+                        const protocol = new URL(details.url).protocol;
+                        const deinitURL = String.fromCharCode.apply(null, oatcrypto.decrypt(domain, b64DecodedToken));
+                        const url = `${protocol}//${domain}${deinitURL}`;
+                        let xhr = new XMLHttpRequest();
+                        xhr.open("GET", url);
+                        xhr.onload = () => {
+                            if (xhr.status === 200) window.localStorage.removeItem(domain);
+                        };
+                        xhr.send();
+                    }
+                }
             }
 
             // Rolling token storage

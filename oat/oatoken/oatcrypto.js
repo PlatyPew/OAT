@@ -45,8 +45,8 @@ if (!process.env.OAT_PASS || process.env.OAT_PASS.length < 16)
 
 const OAT_PASS = crypto.pbkdf2Sync(
     process.env.OAT_PASS,
-    require("os").hostname(),
-    33198,
+    "ilovecryptoveryverymuchgivemeaplswingkeongspirosweihan",
+    133198,
     32,
     "sha3-512"
 );

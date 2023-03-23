@@ -108,10 +108,8 @@ const app = express();
 
 const oat = require("@platypew/oatoken-express");
 
-app.use(oat.init());
+app.use(oat.init()); // Accepts parameters to initialise every token with its fields
 app.use(oat.deinit());
-
-app.get("/api/login");
 
 app.post(
     "/login",
@@ -129,7 +127,7 @@ app.post(
 
 app.get(
     "/logout",
-    oat.deinit, // Sets a header OATDEINIT with the domain to deinit keys
+    oat.deinitpath, // Generates an encrypted path in OATDEINIT header that performs key exchange
     (_, res) => {
         return res.send();
     }
@@ -140,7 +138,7 @@ app.get(
     oat.roll, // Perform rolling token
     async (_, res) => {
         console.log(await oat.getsession(res)); // Gets session data
-        await oat.setsesion(res, {}); // Sets session data
+        await oat.setsession(res, {}); // Sets session data
         // Do something here
         return res.send();
     }

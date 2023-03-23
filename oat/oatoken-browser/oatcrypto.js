@@ -9,7 +9,7 @@ let OAT_PASS = "";
  */
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "sendPassword") {
-        OAT_PASS = pbkdf2.pbkdf2Sync(message.password, 'ilovecryptoveryverymuchgivemeaplswingkeongspirosweihan', 33198, 32, 'sha256');
+        OAT_PASS = pbkdf2.pbkdf2Sync(message.password, 'ilovecryptoveryverymuchgivemeaplswingkeongspirosweihan', 133198, 32, 'sha256');
     }
 });
 
@@ -213,7 +213,12 @@ const _genSharedKey = async (theirPubKey, myKeyPair) => {
 
     const sharedKey = sodium.crypto_scalarmult(ourPrivKey, theirPubKey);
 
-    return { sharedKey };
+    const digest = await crypto.subtle.digest("SHA-1", sharedKey);
+    const clientId = Array.from(new Uint8Array(digest))
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('').toUpperCase()
+
+    return { clientId, sharedKey };
 };
 
 /**
@@ -226,13 +231,17 @@ const initClientKeys = async (domain, getTheirBoxPubKeyFunc) => {
         const myBoxKeyPair = sodium.crypto_box_keypair();
         const mySignKeyPair = sodium.crypto_sign_keypair();
 
-        const theirBoxPubKey = new Uint8Array(
-            await getTheirBoxPubKeyFunc(
-                Buffer.from(myBoxKeyPair.publicKey),
-                Buffer.from(mySignKeyPair.publicKey)
-            )
+        const theirBoxContents = await getTheirBoxPubKeyFunc(
+            Buffer.from(myBoxKeyPair.publicKey),
+            Buffer.from(mySignKeyPair.publicKey)
         );
-        const { sharedKey } = await _genSharedKey(theirBoxPubKey, myBoxKeyPair);
+
+        const theirBoxPubKey = new Uint8Array(theirBoxContents.theirBoxPubKey);
+
+        const { clientId, sharedKey } = await _genSharedKey(theirBoxPubKey, myBoxKeyPair);
+
+        if (clientId !== theirBoxContents.clientId) throw new Error("Shared keys do not match!");
+
 
         await _setSharedKeyClient(domain, sharedKey);
         await _setSigningKey(domain, mySignKeyPair.privateKey);

@@ -8,7 +8,7 @@
     <i>1xAccessToken (OAT) is an API key that constantly rolls, cryptographically secure and immune to being stolen!</i><br />
     <i>You cannot steal a token that expires upon usage.</i>
     <br /><br />
-    <img src="https://img.shields.io/badge/license-LGPLv3-green" />
+    <img src="https://img.shields.io/github/license/platypew/OAT" />
     <img src="https://img.shields.io/badge/node-%3E%3D19.8.0-brightgreen" />
     <img src="https://img.shields.io/badge/Coded%20By%20Humans-100%25-brightgreen" /><br />
     <a href="https://www.npmjs.com/package/@platypew/oatoken"><img src="https://img.shields.io/npm/v/@platypew/oatoken?label=oatoken" /></a>
@@ -53,6 +53,27 @@ npm run build
 ```
 
 To use the extension, Chrome needs to be in developer mode and load unpacked (cd oat/oat-browser)
+
+### Demo Client
+
+Specify `OAT_PASS` as an environment variable that is at least 16 characters long. Optional `PROXY=1` to use Burp Suite as an https proxy.
+
+```bash
+OAT_PASS=thisishopefullyalongenoughpassword node sample.js
+
+PROXY=1 OAT_PASS=thisishopefullyalongenoughpassword node sample.js # To use with a proxy
+```
+
+### Demo Server
+
+To run the demo server locally, you would need to provide a couple of things within the `demo/server` directory
+
+1. A `.env` file consisting of the environment variables `OAT_PASS` and `DOMAIN`.
+2. A `key.pem` file, which is the private key.
+3. A `cert.pem` file, which is the certificate.
+4. A `chain.pem` file, which is the ca.
+
+To deploy, run `docker compose up -d`
 
 ## Usage
 

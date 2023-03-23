@@ -288,11 +288,11 @@ const initTokenClient = async (domain, initConn) => {
             await initConn(Buffer.concat([ourBoxPubKey, ourSignPubKey]).toString("base64"))
         ).toString("base64");
 
-        const { key } = _parseResponseToken(token);
+        const { key, data } = _parseResponseToken(token);
 
         await _setToken(domain, token);
 
-        return key.serverBoxPubKey;
+        return { clientId: data.clientId, theirBoxPubKey: key.serverBoxPubKey };
     });
 };
 

@@ -348,14 +348,16 @@ const initClientKeys = async (domain, getTheirBoxPubKeyFunc) => {
     const myBoxKeyPair = sodium.crypto_box_keypair();
     const mySignKeyPair = sodium.crypto_sign_keypair();
 
-    const theirBoxPubKey = new Uint8Array(
-        await getTheirBoxPubKeyFunc(
-            Buffer.from(myBoxKeyPair.publicKey),
-            Buffer.from(mySignKeyPair.publicKey)
-        )
+    const theirBoxContents = await getTheirBoxPubKeyFunc(
+        Buffer.from(myBoxKeyPair.publicKey),
+        Buffer.from(mySignKeyPair.publicKey)
     );
 
-    const { sharedKey } = await _genSharedKey(theirBoxPubKey, myBoxKeyPair);
+    const theirBoxPubKey = new Uint8Array(theirBoxContents.theirBoxPubKey);
+
+    const { clientId, sharedKey } = await _genSharedKey(theirBoxPubKey, myBoxKeyPair);
+
+    if (clientId !== theirBoxContents.clientId) throw new Error("Shared keys do not match!");
 
     await _setSharedKeyClient(domain, sharedKey);
     await _setSigningKey(domain, mySignKeyPair.privateKey);
